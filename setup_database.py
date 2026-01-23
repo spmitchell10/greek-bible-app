@@ -148,11 +148,12 @@ def download_morphgnt_file(book_name: str, file_number: str, file_abbrev: str) -
 def parse_morphgnt_line(line: str) -> dict:
     """
     Parse a single line from MorphGNT format.
-    Format: book chapter verse word pos person tense voice mood case number gender lemma
-    Example: 610101 N- ----NSF- Βίβλος βίβλος
+    Format: REFERENCE POS MORPH WORD NORMALIZED VARIANT LEMMA
+    Example: 010101 N- ----GSF- γενέσεως γενέσεως γενέσεως γένεσις
+    The lemma (dictionary form) is in position 6.
     """
     parts = line.strip().split()
-    if len(parts) < 3:
+    if len(parts) < 7:  # Need at least 7 parts for lemma
         return None
     
     ref = parts[0]
@@ -164,7 +165,7 @@ def parse_morphgnt_line(line: str) -> dict:
     pos_code = parts[1] if len(parts) > 1 else ""
     morph_code = parts[2] if len(parts) > 2 else ""
     word = parts[3] if len(parts) > 3 else ""
-    lemma = parts[4] if len(parts) > 4 else ""
+    lemma = parts[6] if len(parts) > 6 else ""  # Fixed: lemma is at position 6
     
     # Combine pos and morph codes
     full_morph = pos_code + morph_code
