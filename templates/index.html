@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek New Testament Bible Study</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕮 Greek New Testament Bible Study</h1>
+            <p class="subtitle">Advanced Linguistic Syntax Search</p>
+            <div class="stats" id="stats">
+                <span id="stat-words">Loading...</span>
+                <span id="stat-lemmas">-</span>
+                <span id="stat-books">-</span>
+            </div>
+        </header>
+
+        <main>
+            <div class="search-panel">
+                <h2>Search</h2>
+                
+                <!-- Advanced Search Bar -->
+                <div class="advanced-search-section">
+                    <div class="form-group">
+                        <label for="advanced-search">Advanced Search</label>
+                        <input type="text" id="advanced-search" placeholder="e.g., *λόγος@Nsg or [Matt.] + [verb]@pAI3s" class="advanced-search-input">
+                        <button type="button" id="advanced-search-btn" class="btn btn-primary">Search</button>
+                        <button type="button" id="show-help-btn" class="btn btn-secondary">?</button>
+                    </div>
+                    <div class="corpus-selection">
+                        <label class="corpus-label">Search in:</label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="corpus-nt" checked>
+                            <span>Greek New Testament</span>
+                        </label>
+                        <label class="checkbox-label checkbox-disabled" title="Septuagint data coming soon">
+                            <input type="checkbox" id="corpus-lxx" disabled>
+                            <span>Septuagint (LXX) <span class="coming-soon">Coming Soon</span></span>
+                        </label>
+                    </div>
+                    <div id="search-help" class="search-help" style="display: none;">
+                        <h3>Search Syntax Help</h3>
+                        <div class="help-section">
+                            <h4>Basic Examples:</h4>
+                            <ul>
+                                <li><code>*λόγος@Nsg</code> - Search entire NT (*) for λόγος as Noun (N), singular (s), genitive (g)</li>
+                                <li><code>*εἰμί@VaAI3s</code> - Search for εἰμί as Verb (V), aorist (a), Active (A), Indicative (I), 3rd person (3), singular (s)</li>
+                                <li><code>*[article] & λόγος@Nsg</code> - Article followed by λόγος (noun, singular, genitive)</li>
+                                <li><code>*[article] & λόγος@Nsg W2</code> - Article within 2 words (W2) of λόγος</li>
+                                <li><code>[Matt.] + [verb]@pAI3s</code> - Search only in Matthew for present, active, indicative verbs</li>
+                                <li><code>[Matt., Mk, Lk] + [verb]@aAI3s</code> - Search in Matthew, Mark, and Luke for aorist verbs</li>
+                            </ul>
+                        </div>
+                        <div class="help-section">
+                            <h4>Morphology Codes:</h4>
+                            <div class="code-grid">
+                                <div><strong>Part of Speech:</strong> N=noun, V=verb, J=adjective, D=adverb, C=conjunction, P=preposition, R=pronoun, T=particle, I=interjection</div>
+                                <div><strong>Case:</strong> n=nominative, g=genitive, d=dative, a=accusative, v=vocative</div>
+                                <div><strong>Number:</strong> s=singular, p=plural</div>
+                                <div><strong>Gender:</strong> m=masculine, f=feminine, u=neuter</div>
+                                <div><strong>Tense:</strong> p=present, i=imperfect, f=future, a=aorist, r=perfect, l=pluperfect</div>
+                                <div><strong>Voice:</strong> A=active, M=middle, P=passive</div>
+                                <div><strong>Mood:</strong> I=indicative, S=subjunctive, O=optative, M=imperative, N=infinitive, p=participle</div>
+                                <div><strong>Person:</strong> 1=1st, 2=2nd, 3=3rd</div>
+                            </div>
+                        </div>
+                        <div class="help-section">
+                            <h4>Special Tokens:</h4>
+                            <p>[article], [noun], [verb], [adjective], [pronoun], [preposition], [conjunction], [particle], [adverb]</p>
+                        </div>
+                        <div class="help-section">
+                            <h4>Operators:</h4>
+                            <ul>
+                                <li><code>*</code> - Search entire New Testament</li>
+                                <li><code>[Book] +</code> - Search specific book(s) (e.g., [Matt.] or [Matt., Mk, Lk])</li>
+                                <li><code>@</code> - Specify morphology codes after a word</li>
+                                <li><code>&</code> - Join multiple search terms</li>
+                                <li><code>W#</code> - Words within # distance (e.g., W2 = within 2 words)</li>
+                            </ul>
+                        </div>
+                        <div class="help-section">
+                            <h4>Book Abbreviations:</h4>
+                            <p>Matt, Mark, Mk, Luke, Lk, John, Jn, Acts, Rom, 1Cor, 2Cor, Gal, Eph, Phil, Col, 1Thess, 2Thess, 1Tim, 2Tim, Titus, Phlm, Heb, Jas, 1Pet, 2Pet, 1John, 2John, 3John, Jude, Rev</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="divider-text">OR</div>
+                
+                <h3>Standard Search</h3>
+                <div class="search-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="text-search">Text / Lemma Search</label>
+                            <input type="text" id="text-search" placeholder="Enter Greek word or lemma (e.g., λόγος)">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lemma-exact">Exact Lemma</label>
+                            <input type="text" id="lemma-exact" placeholder="Exact lemma form">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="book-filter">Book</label>
+                            <select id="book-filter">
+                                <option value="">All Books</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="pos-filter">Part of Speech</label>
+                            <select id="pos-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tense-filter">Tense</label>
+                            <select id="tense-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="voice-filter">Voice</label>
+                            <select id="voice-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="mood-filter">Mood</label>
+                            <select id="mood-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="case-filter">Case</label>
+                            <select id="case-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="number-filter">Number</label>
+                            <select id="number-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="gender-filter">Gender</label>
+                            <select id="gender-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="person-filter">Person</label>
+                            <select id="person-filter">
+                                <option value="">All</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="search-btn" class="btn btn-primary">Search</button>
+                        <button type="button" id="clear-btn" class="btn btn-secondary">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <span id="results-count" class="results-count"></span>
+                </div>
+                
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Searching...</p>
+                </div>
+                
+                <div id="results-container" class="results-container"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Data from MorphGNT • Morphologically tagged Greek New Testament</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
