@@ -340,15 +340,19 @@ def execute_query(conn: sqlite3.Connection, query: Query, corpora: List[str] = N
     
     # Multi-term search with proximity
     else:
-        return execute_proximity_search(conn, query)
+        return execute_proximity_search(conn, query, corpora)
 
 
-def execute_proximity_search(conn: sqlite3.Connection, query: Query) -> List[Dict[str, Any]]:
+def execute_proximity_search(conn: sqlite3.Connection, query: Query, corpora: List[str] = None) -> List[Dict[str, Any]]:
     """
     Execute a multi-term search with optional proximity constraint.
     """
     cursor = conn.cursor()
     results = []
+    
+    # Default to all corpora if not specified
+    if corpora is None:
+        corpora = ['NT', 'LXX']
     
     # Build queries for each term
     term_queries = []
