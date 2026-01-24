@@ -367,11 +367,205 @@ async function performAdvancedSearch() {
             return;
         }
         
-        displayResults(data);
+        // Check if it's a relative search
+        if (data.is_relative_search) {
+            // Store data for re-search
+            currentRelativeSearchData = data;
+            
+            // Display word selection panel
+            displayWordSelectionPanel(data.source_verse);
+            
+            // Display relative results
+            displayRelativeResults(data);
+        } else {
+            // Normal advanced search results
+            displayResults(data);
+        }
     } catch (error) {
         console.error('Advanced search error:', error);
         document.getElementById('loading').style.display = 'none';
         document.getElementById('results-container').innerHTML = 
             '<div class="no-results"><p>Error performing search. Please try again.</p></div>';
     }
+}
+
+// Global variable to store current relative search data
+let currentRelativeSearchData = null;
+
+// Display word selection panel with checkboxes
+function displayWordSelectionPanel(sourceVerse) {
+    const panel = document.getElementById('word-selection-panel');
+    const refSpan = document.getElementById('source-verse-ref');
+    const textP = document.getElementById('source-verse-text');
+    const checkboxContainer = document.getElementById('word-checkboxes');
+    
+    refSpan.textContent = sourceVerse.reference;
+    textP.textContent = sourceVerse.text;
+    
+    // Create checkboxes for each word
+    checkboxContainer.innerHTML = '';
+    sourceVerse.words.forEach((wordData, index) => {
+        const label = document.createElement('label');
+        label.className = 'word-checkbox';
+        
+        // Add weight class for styling
+        const weightClass = wordData.weight >= 3 ? 'high-weight' : 'low-weight';
+        label.classList.add(weightClass);
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.value = index;
+        checkbox.dataset.lemma = wordData.lemma;
+        checkbox.dataset.pos = wordData.pos;
+        checkbox.dataset.weight = wordData.weight;
+        
+        const span = document.createElement('span');
+        span.textContent = `${wordData.lemma} (${wordData.pos})`;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        checkboxContainer.appendChild(label);
+    });
+    
+    // Show panel
+    panel.style.display = 'block';
+    
+    // Scroll the panel into view smoothly
+    setTimeout(() => {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+    
+    // Add event listeners for filter buttons
+    document.getElementById('re-search-btn').onclick = performReSearch;
+    document.getElementById('select-all-words-btn').onclick = () => selectWords('all');
+    document.getElementById('select-none-words-btn').onclick = () => selectWords('none');
+    document.getElementById('select-important-words-btn').onclick = () => selectWords('important');
+}
+
+// Select/deselect words based on filter
+function selectWords(filter) {
+    const checkboxes = document.querySelectorAll('#word-checkboxes input[type="checkbox"]');
+    
+    checkboxes.forEach(cb => {
+        if (filter === 'all') {
+            cb.checked = true;
+        } else if (filter === 'none') {
+            cb.checked = false;
+        } else if (filter === 'important') {
+            // Select only high-weight words (verbs, nouns, adjectives, adverbs)
+            cb.checked = parseInt(cb.dataset.weight) >= 3;
+        }
+    });
+}
+
+// Re-search with selected words
+async function performReSearch() {
+    if (!currentRelativeSearchData) {
+        alert('No search data available. Please perform a search first.');
+        return;
+    }
+    
+    // Get selected words
+    const checkboxes = document.querySelectorAll('#word-checkboxes input[type="checkbox"]:checked');
+    const selectedLemmas = Array.from(checkboxes).map(cb => {
+        const index = parseInt(cb.value);
+        return currentRelativeSearchData.source_verse.words[index];
+    });
+    
+    if (selectedLemmas.length === 0) {
+        alert('Please select at least one word');
+        return;
+    }
+    
+    // Get selected corpora from main checkboxes
+    const corpora = [];
+    if (document.getElementById('corpus-nt').checked) corpora.push('NT');
+    if (document.getElementById('corpus-lxx').checked) corpora.push('LXX');
+    
+    // Show loading
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('results-container').innerHTML = '';
+    
+    try {
+        const response = await fetch('/api/advanced-search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                query: `rel ${currentRelativeSearchData.source_verse.reference}`,
+                corpora: corpora,
+                lemmas: selectedLemmas
+            }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results-container').innerHTML = 
+                `<div class="no-results"><p>Error: ${data.error}</p></div>`;
+            return;
+        }
+        
+        // Update current data
+        currentRelativeSearchData = data;
+        
+        // Display results
+        displayRelativeResults(data);
+        
+    } catch (error) {
+        console.error('Re-search error:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('results-container').innerHTML = 
+            '<div class="no-results"><p>Error performing search. Please try again.</p></div>';
+    }
+}
+
+// Display relative search results
+function displayRelativeResults(data) {
+    document.getElementById('loading').style.display = 'none';
+    
+    const container = document.getElementById('results-container');
+    const countSpan = document.getElementById('results-count');
+    
+    if (data.results.length === 0) {
+        container.innerHTML = '<div class="no-results"><p>No similar verses found.</p></div>';
+        countSpan.textContent = '0 results';
+        return;
+    }
+    
+    // Update count
+    countSpan.textContent = `${data.results.length} result${data.results.length !== 1 ? 's' : ''}`;
+    if (data.limited) {
+        countSpan.textContent += ' (showing top 100)';
+    }
+    
+    // Build results HTML
+    let html = '<div class="relative-results">';
+    html += `<div class="source-verse-display">
+                <h3>Source Verse: ${data.source_verse.reference}</h3>
+                <p class="verse-text">${data.source_verse.text}</p>
+             </div>`;
+    
+    data.results.forEach(result => {
+        html += `
+            <div class="result-item relative-result-item">
+                <div class="result-header">
+                    <span class="reference">${result.reference}</span>
+                    <span class="similarity-score" title="Similarity score based on matching lemmas">
+                        Score: ${result.score} (${result.match_count} word${result.match_count !== 1 ? 's' : ''})
+                    </span>
+                </div>
+                <div class="result-text">${result.verse_text}</div>
+                <div class="matched-lemmas">
+                    <strong>Matched lemmas:</strong> ${result.matched_lemmas.join(', ')}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
 }

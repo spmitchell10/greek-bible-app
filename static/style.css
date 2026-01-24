@@ -88,9 +88,29 @@ main {
     padding: 30px;
     border-radius: 12px;
     box-shadow: 0 2px 10px var(--shadow);
-    height: fit-content;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
     position: sticky;
     top: 20px;
+    scroll-behavior: smooth;
+}
+
+.search-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-panel::-webkit-scrollbar-track {
+    background: var(--background);
+    border-radius: 4px;
+}
+
+.search-panel::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 4px;
+}
+
+.search-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
 }
 
 .search-panel h2 {
@@ -539,4 +559,210 @@ footer {
     padding: 2px 6px;
     border-radius: 3px;
     margin-left: 6px;
+}
+
+/* Relative Search Section */
+.relative-search-section {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.relative-search-section h3 {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+}
+
+.relative-search-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.relative-search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: var(--greek-font);
+    background: var(--background);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.relative-search-input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Word Selection Panel */
+.word-selection-panel {
+    background: var(--background);
+    border: 2px solid var(--secondary-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.word-selection-panel h4 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.source-verse-text {
+    font-family: var(--greek-font);
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 6px;
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.word-filters {
+    margin-top: 20px;
+}
+
+.filter-instruction {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+}
+
+.word-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--surface);
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.word-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--background);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.word-checkbox:hover {
+    border-color: var(--secondary-color);
+    transform: translateY(-1px);
+}
+
+.word-checkbox.high-weight {
+    border-color: var(--secondary-color);
+    background: rgba(52, 152, 219, 0.05);
+}
+
+.word-checkbox.high-weight span {
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.word-checkbox.low-weight {
+    opacity: 0.8;
+}
+
+.word-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--secondary-color);
+}
+
+.word-checkbox span {
+    font-family: var(--greek-font);
+    user-select: none;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Relative Results */
+.relative-results {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.source-verse-display {
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.source-verse-display h3 {
+    color: white;
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+}
+
+.source-verse-display .verse-text {
+    font-family: var(--greek-font);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.relative-result-item {
+    border-left: 4px solid var(--secondary-color);
+}
+
+.relative-result-item .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.similarity-score {
+    background: var(--secondary-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.matched-lemmas {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.matched-lemmas strong {
+    color: var(--text-primary);
+}
+
+/* Highlighted matched words in verse text */
+.result-text strong {
+    color: var(--secondary-color);
+    font-weight: 700;
+    background: rgba(52, 152, 219, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
 }

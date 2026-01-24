@@ -8,6 +8,7 @@ import sqlite3
 from typing import List, Dict, Any
 import os
 from query_parser import parse_query, execute_query, format_search_help
+from relative_search import parse_verse_reference, get_verse_words, search_by_lemmas, get_verse_context
 
 app = Flask(__name__)
 DATABASE = "greek_nt.db"
@@ -247,6 +248,11 @@ def advanced_search():
         # Parse the query
         query = parse_query(query_string)
         
+        # Check if it's a relative search
+        if query.is_relative_search:
+            # Handle relative search
+            return handle_relative_search(query.relative_verse_ref, corpora, data.get("lemmas"))
+        
         # Execute the query with corpus filtering
         conn = get_db()
         results = execute_query(conn, query, corpora)
@@ -291,6 +297,190 @@ def advanced_search():
             "count": 0,
             "error": str(e)
         }), 400
+
+
+def handle_relative_search(verse_reference, corpora, provided_lemmas=None):
+    """
+    Handle a relative search request.
+    Extracted as a separate function so it can be called from both
+    advanced search and the dedicated relative search endpoint.
+    """
+    try:
+        # Parse the verse reference
+        book_code, chapter, verse = parse_verse_reference(verse_reference)
+        
+        # Get connection
+        conn = get_db()
+        
+        # If lemmas are provided, use them (for re-search)
+        # Otherwise, get all words from the source verse
+        if provided_lemmas:
+            lemmas = provided_lemmas
+        else:
+            lemmas = get_verse_words(conn, book_code, chapter, verse)
+        
+        if not lemmas:
+            return jsonify({
+                "error": "No words found in source verse",
+                "source_verse": verse_reference,
+                "is_relative_search": True
+            }), 404
+        
+        # Get the source verse text
+        source_corpus = conn.execute(
+            "SELECT corpus FROM words WHERE book_code = ? AND chapter = ? AND verse = ? LIMIT 1",
+            (book_code, chapter, verse)
+        ).fetchone()
+        
+        if not source_corpus:
+            return jsonify({
+                "error": f"Verse not found: {verse_reference}",
+                "is_relative_search": True
+            }), 404
+        
+        source_corpus = source_corpus[0]
+        source_text = get_verse_context(conn, book_code, chapter, verse, source_corpus)
+        
+        # Get book name
+        book_name = conn.execute(
+            "SELECT book_name FROM books WHERE book_code = ? AND corpus = ?",
+            (book_code, source_corpus)
+        ).fetchone()[0]
+        
+        # Search for similar verses
+        results = search_by_lemmas(
+            conn,
+            lemmas,
+            book_code,
+            chapter,
+            verse,
+            corpora
+        )
+        
+        # Format results with references
+        for result in results:
+            result["reference"] = f"{result['book_name']} {result['chapter']}:{result['verse']}"
+        
+        conn.close()
+        
+        # Return results with source verse info and flag
+        return jsonify({
+            "is_relative_search": True,
+            "source_verse": {
+                "reference": f"{book_name} {chapter}:{verse}",
+                "text": source_text,
+                "book_code": book_code,
+                "chapter": chapter,
+                "verse": verse,
+                "corpus": source_corpus,
+                "words": lemmas  # Include all words for checkbox UI
+            },
+            "results": results[:100],  # Limit to top 100 results
+            "count": len(results[:100]),
+            "total_matches": len(results),
+            "limited": len(results) > 100
+        })
+        
+    except ValueError as e:
+        return jsonify({"error": str(e), "is_relative_search": True}), 400
+    except Exception as e:
+        return jsonify({"error": f"Search error: {str(e)}", "is_relative_search": True}), 500
+
+
+@app.route("/api/relative-search", methods=["POST"])
+def relative_search():
+    """
+    Search for verses with similar vocabulary to a given source verse.
+    Expects JSON: {
+        "verse_reference": "Rom. 8:1",
+        "corpora": ["NT", "LXX"],
+        "lemmas": [{"lemma": "λόγος", "pos": "noun", "weight": 3}, ...]  // optional for re-search
+    }
+    """
+    data = request.json
+    verse_reference = data.get("verse_reference", "").strip()
+    corpora = data.get("corpora", ["NT"])
+    provided_lemmas = data.get("lemmas")  # For re-search with selected words
+    
+    if not verse_reference:
+        return jsonify({"error": "No verse reference provided"}), 400
+    
+    try:
+        # Parse the verse reference
+        book_code, chapter, verse = parse_verse_reference(verse_reference)
+        
+        # Get connection
+        conn = get_db()
+        
+        # If lemmas are provided, use them (for re-search)
+        # Otherwise, get all words from the source verse
+        if provided_lemmas:
+            lemmas = provided_lemmas
+        else:
+            lemmas = get_verse_words(conn, book_code, chapter, verse)
+        
+        if not lemmas:
+            return jsonify({
+                "error": "No words found in source verse",
+                "source_verse": verse_reference
+            }), 404
+        
+        # Get the source verse text
+        source_corpus = conn.execute(
+            "SELECT corpus FROM words WHERE book_code = ? AND chapter = ? AND verse = ? LIMIT 1",
+            (book_code, chapter, verse)
+        ).fetchone()
+        
+        if not source_corpus:
+            return jsonify({
+                "error": f"Verse not found: {verse_reference}"
+            }), 404
+        
+        source_corpus = source_corpus[0]
+        source_text = get_verse_context(conn, book_code, chapter, verse, source_corpus)
+        
+        # Get book name
+        book_name = conn.execute(
+            "SELECT book_name FROM books WHERE book_code = ? AND corpus = ?",
+            (book_code, source_corpus)
+        ).fetchone()[0]
+        
+        # Search for similar verses
+        results = search_by_lemmas(
+            conn,
+            lemmas,
+            book_code,
+            chapter,
+            verse,
+            corpora
+        )
+        
+        # Format results with references
+        for result in results:
+            result["reference"] = f"{result['book_name']} {result['chapter']}:{result['verse']}"
+        
+        conn.close()
+        
+        # Return results with source verse info
+        return jsonify({
+            "source_verse": {
+                "reference": f"{book_name} {chapter}:{verse}",
+                "text": source_text,
+                "book_code": book_code,
+                "chapter": chapter,
+                "verse": verse,
+                "corpus": source_corpus,
+                "words": lemmas  # Include all words for checkbox UI
+            },
+            "results": results[:100],  # Limit to top 100 results
+            "total_matches": len(results),
+            "limited": len(results) > 100
+        })
+        
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Search error: {str(e)}"}), 500
 
 
 @app.route("/api/search-help")

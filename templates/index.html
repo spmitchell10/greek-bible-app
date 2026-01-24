@@ -79,11 +79,37 @@
                                 <li><code>@</code> - Specify morphology codes after a word</li>
                                 <li><code>&</code> - Join multiple search terms</li>
                                 <li><code>W#</code> - Words within # distance (e.g., W2 = within 2 words)</li>
+                                <li><code>*rel <verse ref></code> - Relative search (find similar verses) e.g., <code>*rel Rom. 8:1</code></li>
                             </ul>
                         </div>
                         <div class="help-section">
                             <h4>Book Abbreviations:</h4>
                             <p>Matt, Mark, Mk, Luke, Lk, John, Jn, Acts, Rom, 1Cor, 2Cor, Gal, Eph, Phil, Col, 1Thess, 2Thess, 1Tim, 2Tim, Titus, Phlm, Heb, Jas, 1Pet, 2Pet, 1John, 2John, 3John, Jude, Rev</p>
+                        </div>
+                        <div class="help-section">
+                            <h4>Relative Search (Parallel Passage Finder):</h4>
+                            <p>Use <code>*rel</code> or <code>rel</code> followed by a verse reference to find verses with similar vocabulary.</p>
+                            <ul>
+                                <li><code>*rel Rom. 8:1</code> - Find verses similar to Romans 8:1</li>
+                                <li><code>rel John 3:16</code> - Find verses similar to John 3:16</li>
+                                <li>After searching, you can refine by selecting specific words to include</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Word Selection Panel (shown after relative search) -->
+                <div id="word-selection-panel" class="word-selection-panel" style="display: none;">
+                    <h4>Source Verse: <span id="source-verse-ref"></span></h4>
+                    <p class="source-verse-text" id="source-verse-text"></p>
+                    <div class="word-filters">
+                        <p class="filter-instruction">Select which words to include in the search:</p>
+                        <div class="word-checkboxes" id="word-checkboxes"></div>
+                        <div class="filter-actions">
+                            <button type="button" id="re-search-btn" class="btn btn-primary">Re-search with Selected Words</button>
+                            <button type="button" id="select-all-words-btn" class="btn btn-secondary">Select All</button>
+                            <button type="button" id="select-none-words-btn" class="btn btn-secondary">Clear All</button>
+                            <button type="button" id="select-important-words-btn" class="btn btn-secondary">Important Words Only</button>
                         </div>
                     </div>
                 </div>

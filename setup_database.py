@@ -218,7 +218,8 @@ def create_database():
             number TEXT,
             gender TEXT,
             corpus TEXT NOT NULL DEFAULT 'NT',
-            FOREIGN KEY (book_code) REFERENCES books(book_code)
+            FOREIGN KEY (book_code) REFERENCES books(book_code),
+            UNIQUE(book_code, chapter, verse, word_position, corpus)
         )
     """)
     

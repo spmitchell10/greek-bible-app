@@ -196,8 +196,12 @@ class Query:
         self.proximity: Optional[int] = None  # For W# syntax
         self.whole_nt = False  # For * wildcard
         self.book_codes: List[str] = []  # For book filtering (e.g., ['01', '02'])
+        self.is_relative_search: bool = False  # Flag for relative search
+        self.relative_verse_ref: str = ""  # Verse reference for relative search
     
     def __repr__(self):
+        if self.is_relative_search:
+            return f"Query(relative_search={self.relative_verse_ref})"
         return f"Query(terms={self.terms}, proximity={self.proximity}, whole_nt={self.whole_nt}, books={self.book_codes})"
 
 
@@ -211,9 +215,18 @@ def parse_query(query_string: str) -> Query:
     - *εἰμί@VaAI3s
     - [Matt.] + [verb]@aAI3s
     - [Matt., Mk, Lk] + [verb]@aAI3s
+    - *rel Rom. 8:1 (relative search)
+    - rel John 3:16 (relative search)
     """
     query = Query()
     query_string = query_string.strip()
+    
+    # Check for relative search: *rel <verse ref> or rel <verse ref>
+    rel_match = re.match(r'^\*?\s*rel\s+(.+)$', query_string, re.IGNORECASE)
+    if rel_match:
+        query.is_relative_search = True
+        query.relative_verse_ref = rel_match.group(1).strip()
+        return query
     
     # Check for book specification: [Book, Book] + query
     book_match = re.match(r'\[([^\]]+)\]\s*\+\s*(.+)', query_string)
