@@ -489,6 +489,87 @@ def search_help():
     return jsonify(format_search_help())
 
 
+@app.route("/api/read", methods=["POST"])
+def read_text():
+    """
+    Get chapter(s) for reading view with infinite scroll support.
+    Expects JSON: {
+        "book_code": "01",
+        "chapter": 5,
+        "corpus": "NT",
+        "context": 1  // number of chapters before/after to include
+    }
+    """
+    data = request.json
+    book_code = data.get("book_code")
+    chapter = data.get("chapter")
+    corpus = data.get("corpus", "NT")
+    context = data.get("context", 1)  # Load 1 chapter before and after
+    
+    if not book_code or not chapter:
+        return jsonify({"error": "Book code and chapter required"}), 400
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Get book info
+        book_info = cursor.execute(
+            "SELECT book_name, book_abbrev FROM books WHERE book_code = ? AND corpus = ?",
+            (book_code, corpus)
+        ).fetchone()
+        
+        if not book_info:
+            return jsonify({"error": "Book not found"}), 404
+        
+        book_name = book_info["book_name"]
+        book_abbrev = book_info["book_abbrev"]
+        
+        # Calculate chapter range
+        start_chapter = max(1, chapter - context)
+        end_chapter = chapter + context
+        
+        # Get all chapters in range
+        chapters = []
+        
+        for ch in range(start_chapter, end_chapter + 1):
+            # Get all verses in this chapter
+            verses = cursor.execute("""
+                SELECT verse, GROUP_CONCAT(word, ' ') as verse_text
+                FROM words
+                WHERE book_code = ? AND chapter = ? AND corpus = ?
+                GROUP BY verse
+                ORDER BY verse
+            """, (book_code, ch, corpus)).fetchall()
+            
+            if verses:
+                chapter_data = {
+                    "book_code": book_code,
+                    "book_name": book_name,
+                    "book_abbrev": book_abbrev,
+                    "chapter": ch,
+                    "verses": [
+                        {
+                            "verse": row["verse"],
+                            "text": row["verse_text"]
+                        }
+                        for row in verses
+                    ]
+                }
+                chapters.append(chapter_data)
+        
+        conn.close()
+        
+        return jsonify({
+            "chapters": chapters,
+            "requested_chapter": chapter,
+            "corpus": corpus
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     if not os.path.exists(DATABASE):
         print("Error: Database not found. Please run 'python setup_database.py' first.")

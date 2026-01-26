@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('clear-btn').addEventListener('click', clearForm);
     document.getElementById('advanced-search-btn').addEventListener('click', performAdvancedSearch);
     document.getElementById('show-help-btn').addEventListener('click', toggleHelp);
+    document.getElementById('load-reading-btn').addEventListener('click', loadReadingView);
+    
+    // Display mode change listener
+    document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
+        radio.addEventListener('change', handleDisplayModeChange);
+    });
     
     // Enable search on Enter key
     document.querySelectorAll('input').forEach(input => {
@@ -18,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') {
                 if (input.id === 'advanced-search') {
                     performAdvancedSearch();
+                } else if (input.id === 'read-chapter') {
+                    loadReadingView();
                 } else {
                     performSearch();
                 }
@@ -49,12 +57,23 @@ async function loadBooks() {
         const response = await fetch('/api/books');
         const books = await response.json();
         
+        // Populate search filter dropdown
         const select = document.getElementById('book-filter');
         books.forEach(book => {
             const option = document.createElement('option');
             option.value = book.book_code;
             option.textContent = book.book_name;
             select.appendChild(option);
+        });
+        
+        // Populate reading view dropdown
+        const readSelect = document.getElementById('read-book');
+        books.forEach(book => {
+            const option = document.createElement('option');
+            option.value = book.book_code;
+            option.textContent = `${book.book_name} (${book.corpus})`;
+            option.dataset.corpus = book.corpus;
+            readSelect.appendChild(option);
         });
     } catch (error) {
         console.error('Error loading books:', error);
@@ -568,4 +587,356 @@ function displayRelativeResults(data) {
     html += '</div>';
     
     container.innerHTML = html;
+}
+
+// ============================================================================
+// READING VIEW FUNCTIONALITY
+// ============================================================================
+
+let currentReadingState = {
+    bookCode: null,
+    currentChapter: null,
+    corpus: 'NT',
+    displayMode: 'verse',
+    loadedChapters: new Set(),
+    isLoading: false,
+    hasMoreBefore: true,
+    hasMoreAfter: true
+};
+
+async function loadReadingView() {
+    const bookCode = document.getElementById('read-book').value;
+    const chapter = parseInt(document.getElementById('read-chapter').value);
+    const corpus = document.querySelector('input[name="read-corpus"]:checked').value;
+    const displayMode = document.querySelector('input[name="display-mode"]:checked').value;
+    
+    if (!bookCode || !chapter) {
+        alert('Please select a book and enter a chapter number');
+        return;
+    }
+    
+    // Reset state for new reading
+    currentReadingState = {
+        bookCode: bookCode,
+        currentChapter: chapter,
+        corpus: corpus,
+        displayMode: displayMode,
+        loadedChapters: new Set(),
+        isLoading: false,
+        hasMoreBefore: true,
+        hasMoreAfter: true
+    };
+    
+    // Clear results and load initial chapter
+    const container = document.getElementById('results-container');
+    container.innerHTML = '<div class="loading-indicator">Loading...</div>';
+    
+    // Load the requested chapter with context
+    await loadChapters(chapter, true);
+    
+    // Setup infinite scroll
+    setupInfiniteScroll();
+}
+
+async function loadChapters(centerChapter, isInitial = false) {
+    if (currentReadingState.isLoading) return;
+    
+    currentReadingState.isLoading = true;
+    
+    try {
+        const response = await fetch('/api/read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                book_code: currentReadingState.bookCode,
+                chapter: centerChapter,
+                corpus: currentReadingState.corpus,
+                context: 1  // Load 1 chapter before and after
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+        
+        if (isInitial) {
+            // Initial load - replace content
+            displayChapters(data.chapters, true);
+            
+            // Scroll to the requested chapter
+            setTimeout(() => {
+                const requestedChapterElem = document.querySelector(`[data-chapter="${centerChapter}"]`);
+                if (requestedChapterElem) {
+                    requestedChapterElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        } else {
+            // Append or prepend to existing content
+            displayChapters(data.chapters, false);
+        }
+        
+        // Mark chapters as loaded
+        data.chapters.forEach(ch => {
+            currentReadingState.loadedChapters.add(ch.chapter);
+        });
+        
+        // Update bounds
+        if (data.chapters.length === 0 || (data.chapters[0] && data.chapters[0].chapter === 1)) {
+            currentReadingState.hasMoreBefore = false;
+        }
+        
+    } catch (error) {
+        console.error('Error loading chapters:', error);
+        showError('Error loading text: ' + error.message);
+    } finally {
+        currentReadingState.isLoading = false;
+    }
+}
+
+function displayChapters(chapters, replace = false) {
+    const container = document.getElementById('results-container');
+    const displayMode = currentReadingState.displayMode || 'verse';
+    
+    if (replace) {
+        container.innerHTML = '';
+    }
+    
+    chapters.forEach(chapter => {
+        // Skip if already displayed
+        if (document.querySelector(`[data-chapter="${chapter.chapter}"]`)) {
+            return;
+        }
+        
+        const chapterDiv = document.createElement('div');
+        chapterDiv.className = 'chapter-section';
+        if (displayMode === 'paragraph') {
+            chapterDiv.classList.add('paragraph-mode');
+        }
+        chapterDiv.dataset.chapter = chapter.chapter;
+        
+        let html = `
+            <div class="chapter-header">
+                ${chapter.book_name} ${chapter.chapter}
+            </div>
+        `;
+        
+        if (displayMode === 'paragraph') {
+            // Paragraph mode: continuous text with superscript verse numbers
+            html += '<div class="paragraph-content">';
+            chapter.verses.forEach((verse, index) => {
+                html += `<span class="verse-item">`;
+                html += `<sup class="verse-number">${verse.verse}</sup>`;
+                html += `<span class="verse-text">${verse.text}</span>`;
+                // Add space between verses
+                if (index < chapter.verses.length - 1) {
+                    html += ' ';
+                }
+                html += `</span>`;
+            });
+            html += '</div>';
+        } else {
+            // Verse-by-verse mode: traditional format
+            chapter.verses.forEach(verse => {
+                html += `
+                    <div class="verse-item">
+                        <div class="verse-number">${verse.verse}</div>
+                        <div class="verse-text">${verse.text}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        chapterDiv.innerHTML = html;
+        
+        // Determine where to insert
+        if (replace || !container.firstChild) {
+            container.appendChild(chapterDiv);
+        } else {
+            // Insert in correct order
+            const existingChapters = Array.from(container.querySelectorAll('.chapter-section'));
+            const insertBefore = existingChapters.find(el => 
+                parseInt(el.dataset.chapter) > chapter.chapter
+            );
+            
+            if (insertBefore) {
+                container.insertBefore(chapterDiv, insertBefore);
+            } else {
+                container.appendChild(chapterDiv);
+            }
+        }
+    });
+}
+
+function setupInfiniteScroll() {
+    const container = document.getElementById('results-container');
+    
+    // Remove existing listener if any
+    container.removeEventListener('scroll', handleScroll);
+    
+    // Add new listener
+    container.addEventListener('scroll', handleScroll);
+}
+
+function handleScroll() {
+    const container = document.getElementById('results-container');
+    const scrollTop = container.scrollTop;
+    const scrollHeight = container.scrollHeight;
+    const clientHeight = container.clientHeight;
+    
+    // Load more when near top (scrolled up)
+    if (scrollTop < 300 && currentReadingState.hasMoreBefore && !currentReadingState.isLoading) {
+        const firstChapter = getFirstLoadedChapter();
+        if (firstChapter > 1) {
+            loadAdjacentChapter(firstChapter - 1, 'before');
+        }
+    }
+    
+    // Load more when near bottom (scrolled down)
+    if (scrollTop + clientHeight > scrollHeight - 300 && currentReadingState.hasMoreAfter && !currentReadingState.isLoading) {
+        const lastChapter = getLastLoadedChapter();
+        loadAdjacentChapter(lastChapter + 1, 'after');
+    }
+}
+
+async function loadAdjacentChapter(chapterNum, direction) {
+    if (currentReadingState.loadedChapters.has(chapterNum)) return;
+    if (currentReadingState.isLoading) return;
+    
+    currentReadingState.isLoading = true;
+    
+    // Save current scroll position
+    const container = document.getElementById('results-container');
+    const scrollBefore = container.scrollHeight;
+    
+    try {
+        const response = await fetch('/api/read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                book_code: currentReadingState.bookCode,
+                chapter: chapterNum,
+                corpus: currentReadingState.corpus,
+                context: 0  // Just load this chapter
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error || data.chapters.length === 0) {
+            // No more chapters in this direction
+            if (direction === 'before') {
+                currentReadingState.hasMoreBefore = false;
+            } else {
+                currentReadingState.hasMoreAfter = false;
+            }
+            return;
+        }
+        
+        displayChapters(data.chapters, false);
+        currentReadingState.loadedChapters.add(chapterNum);
+        
+        // Restore scroll position when loading before
+        if (direction === 'before') {
+            const scrollAfter = container.scrollHeight;
+            container.scrollTop += (scrollAfter - scrollBefore);
+        }
+        
+    } catch (error) {
+        console.error('Error loading adjacent chapter:', error);
+    } finally {
+        currentReadingState.isLoading = false;
+    }
+}
+
+function getFirstLoadedChapter() {
+    const chapters = Array.from(currentReadingState.loadedChapters);
+    return Math.min(...chapters);
+}
+
+function getLastLoadedChapter() {
+    const chapters = Array.from(currentReadingState.loadedChapters);
+    return Math.max(...chapters);
+}
+
+function handleDisplayModeChange(event) {
+    const newMode = event.target.value;
+    
+    // Only update if we have content loaded
+    if (currentReadingState.loadedChapters.size === 0) {
+        return;
+    }
+    
+    // Update state
+    currentReadingState.displayMode = newMode;
+    
+    // Get all chapter sections
+    const chapterSections = document.querySelectorAll('.chapter-section');
+    
+    chapterSections.forEach(section => {
+        const chapter = parseInt(section.dataset.chapter);
+        
+        // Toggle paragraph mode class
+        if (newMode === 'paragraph') {
+            section.classList.add('paragraph-mode');
+        } else {
+            section.classList.remove('paragraph-mode');
+        }
+        
+        // Get chapter data from the section
+        const bookName = section.querySelector('.chapter-header').textContent.trim().split(' ').slice(0, -1).join(' ');
+        const verses = [];
+        
+        if (newMode === 'verse') {
+            // Converting from paragraph to verse mode
+            const verseElements = section.querySelectorAll('.verse-item');
+            verseElements.forEach(elem => {
+                const verseNum = elem.querySelector('.verse-number').textContent.trim();
+                const verseText = elem.querySelector('.verse-text').textContent.trim();
+                verses.push({ verse: verseNum, text: verseText });
+            });
+            
+            // Rebuild in verse mode
+            let html = section.querySelector('.chapter-header').outerHTML;
+            verses.forEach(verse => {
+                html += `
+                    <div class="verse-item">
+                        <div class="verse-number">${verse.verse}</div>
+                        <div class="verse-text">${verse.text}</div>
+                    </div>
+                `;
+            });
+            section.innerHTML = html;
+            
+        } else {
+            // Converting from verse to paragraph mode
+            const verseElements = section.querySelectorAll('.verse-item');
+            verseElements.forEach(elem => {
+                const verseNum = elem.querySelector('.verse-number').textContent.trim();
+                const verseText = elem.querySelector('.verse-text').textContent.trim();
+                verses.push({ verse: verseNum, text: verseText });
+            });
+            
+            // Rebuild in paragraph mode
+            let html = section.querySelector('.chapter-header').outerHTML;
+            html += '<div class="paragraph-content">';
+            verses.forEach((verse, index) => {
+                html += `<span class="verse-item">`;
+                html += `<sup class="verse-number">${verse.verse}</sup>`;
+                html += `<span class="verse-text">${verse.text}</span>`;
+                if (index < verses.length - 1) {
+                    html += ' ';
+                }
+                html += `</span>`;
+            });
+            html += '</div>';
+            section.innerHTML = html;
+        }
+    });
 }
