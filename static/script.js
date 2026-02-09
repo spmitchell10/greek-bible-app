@@ -396,6 +396,9 @@ async function performAdvancedSearch() {
             
             // Display relative results
             displayRelativeResults(data);
+        } else if (data.is_inference_search) {
+            // Display inference results
+            displayInferenceResults(data);
         } else {
             // Normal advanced search results
             displayResults(data);
@@ -580,6 +583,56 @@ function displayRelativeResults(data) {
                 <div class="result-text">${result.verse_text}</div>
                 <div class="matched-lemmas">
                     <strong>Matched lemmas:</strong> ${result.matched_lemmas.join(', ')}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function displayInferenceResults(data) {
+    document.getElementById('loading').style.display = 'none';
+    
+    const container = document.getElementById('results-container');
+    const countSpan = document.getElementById('results-count');
+    
+    if (data.results.length === 0) {
+        container.innerHTML = '<div class="no-results"><p>No verses with similar syntax found.</p></div>';
+        countSpan.textContent = '0 results';
+        return;
+    }
+    
+    // Update count
+    countSpan.textContent = `${data.results.length} result${data.results.length !== 1 ? 's' : ''}`;
+    
+    // Build results HTML
+    let html = '<div class="inference-results">';
+    html += `<div class="source-verse-display">
+                <h3>Source Verse: ${data.source_verse.reference}</h3>
+                <p class="verse-text">${data.source_verse.text}</p>
+                <div class="pattern-display">
+                    <strong>Syntactic Pattern:</strong> 
+                    <code class="pattern-code">${data.source_verse.pattern.join(' → ')}</code>
+                </div>
+             </div>`;
+    
+    data.results.forEach(result => {
+        html += `
+            <div class="result-item inference-result-item">
+                <div class="result-header">
+                    <span class="reference">${result.reference}</span>
+                    <span class="similarity-score" title="Similarity percentage based on syntactic structure">
+                        ${result.similarity}% similar
+                    </span>
+                </div>
+                <div class="result-text">${result.verse_text}</div>
+                <div class="pattern-info">
+                    <strong>Pattern:</strong> <code class="pattern-code">${result.pattern.join(' → ')}</code>
+                    <span class="pattern-stats">
+                        (Edit distance: ${result.edit_distance}, Length diff: ${result.length_diff})
+                    </span>
                 </div>
             </div>
         `;

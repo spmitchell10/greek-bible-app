@@ -198,10 +198,14 @@ class Query:
         self.book_codes: List[str] = []  # For book filtering (e.g., ['01', '02'])
         self.is_relative_search: bool = False  # Flag for relative search
         self.relative_verse_ref: str = ""  # Verse reference for relative search
+        self.is_inference_search: bool = False  # Flag for inference search
+        self.inference_verse_ref: str = ""  # Verse reference for inference search
     
     def __repr__(self):
         if self.is_relative_search:
             return f"Query(relative_search={self.relative_verse_ref})"
+        if self.is_inference_search:
+            return f"Query(inference_search={self.inference_verse_ref})"
         return f"Query(terms={self.terms}, proximity={self.proximity}, whole_nt={self.whole_nt}, books={self.book_codes})"
 
 
@@ -215,8 +219,10 @@ def parse_query(query_string: str) -> Query:
     - *εἰμί@VaAI3s
     - [Matt.] + [verb]@aAI3s
     - [Matt., Mk, Lk] + [verb]@aAI3s
-    - *rel Rom. 8:1 (relative search)
-    - rel John 3:16 (relative search)
+    - *rel Rom. 8:1 (relative search - similar vocabulary)
+    - rel John 3:16 (relative search - similar vocabulary)
+    - *inf Rom. 8:1 (inference search - similar syntax)
+    - inf John 3:16 (inference search - similar syntax)
     """
     query = Query()
     query_string = query_string.strip()
@@ -226,6 +232,13 @@ def parse_query(query_string: str) -> Query:
     if rel_match:
         query.is_relative_search = True
         query.relative_verse_ref = rel_match.group(1).strip()
+        return query
+    
+    # Check for inference search: *inf <verse ref> or inf <verse ref>
+    inf_match = re.match(r'^\*?\s*inf\s+(.+)$', query_string, re.IGNORECASE)
+    if inf_match:
+        query.is_inference_search = True
+        query.inference_verse_ref = inf_match.group(1).strip()
         return query
     
     # Check for book specification: [Book, Book] + query

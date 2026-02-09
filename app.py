@@ -9,6 +9,7 @@ from typing import List, Dict, Any
 import os
 from query_parser import parse_query, execute_query, format_search_help
 from relative_search import parse_verse_reference, get_verse_words, search_by_lemmas, get_verse_context
+from inference_search import get_verse_pattern, search_by_pattern, get_verse_text
 
 app = Flask(__name__)
 DATABASE = "greek_nt.db"
@@ -253,6 +254,10 @@ def advanced_search():
             # Handle relative search
             return handle_relative_search(query.relative_verse_ref, corpora, data.get("lemmas"))
         
+        if query.is_inference_search:
+            # Handle inference search
+            return handle_inference_search(query.inference_verse_ref, corpora)
+        
         # Execute the query with corpus filtering
         conn = get_db()
         results = execute_query(conn, query, corpora)
@@ -385,6 +390,94 @@ def handle_relative_search(verse_reference, corpora, provided_lemmas=None):
         return jsonify({"error": str(e), "is_relative_search": True}), 400
     except Exception as e:
         return jsonify({"error": f"Search error: {str(e)}", "is_relative_search": True}), 500
+
+
+def handle_inference_search(verse_reference, corpora):
+    """
+    Handle an inference search request.
+    Finds verses with similar syntactic structure to the source verse.
+    """
+    try:
+        # Parse the verse reference
+        from inference_search import parse_verse_reference as inf_parse_verse_reference
+        book_code, chapter, verse = inf_parse_verse_reference(verse_reference)
+        
+        # Get connection
+        conn = get_db()
+        
+        # Determine which corpus the source verse is from
+        source_corpus = conn.execute(
+            "SELECT corpus FROM words WHERE book_code = ? AND chapter = ? AND verse = ? LIMIT 1",
+            (book_code, chapter, verse)
+        ).fetchone()
+        
+        if not source_corpus:
+            return jsonify({
+                "error": f"Verse not found: {verse_reference}",
+                "is_inference_search": True
+            }), 404
+        
+        source_corpus = source_corpus[0]
+        
+        # Get the grammatical pattern of the source verse
+        source_pattern = get_verse_pattern(conn, book_code, chapter, verse, source_corpus)
+        
+        if not source_pattern:
+            return jsonify({
+                "error": "No pattern found in source verse",
+                "source_verse": verse_reference,
+                "is_inference_search": True
+            }), 404
+        
+        # Get the source verse text
+        source_text = get_verse_text(conn, book_code, chapter, verse, source_corpus)
+        
+        # Get book name
+        book_name = conn.execute(
+            "SELECT book_name FROM books WHERE book_code = ? AND corpus = ?",
+            (book_code, source_corpus)
+        ).fetchone()[0]
+        
+        # Search for verses with similar patterns
+        results = search_by_pattern(
+            conn,
+            source_pattern,
+            book_code,
+            chapter,
+            verse,
+            corpora,
+            min_similarity=0.6,  # 60% similarity threshold
+            include_morphology=False,  # Start with just POS matching
+            max_results=100
+        )
+        
+        # Format results with references
+        for result in results:
+            result["reference"] = f"{result['book_name']} {result['chapter']}:{result['verse']}"
+        
+        conn.close()
+        
+        # Return results with source verse info and pattern
+        return jsonify({
+            "is_inference_search": True,
+            "source_verse": {
+                "reference": f"{book_name} {chapter}:{verse}",
+                "text": source_text,
+                "book_code": book_code,
+                "chapter": chapter,
+                "verse": verse,
+                "corpus": source_corpus,
+                "pattern": [p['pattern_str'] for p in source_pattern]  # Pattern for display
+            },
+            "results": results,
+            "count": len(results),
+            "total_matches": len(results)
+        })
+        
+    except ValueError as e:
+        return jsonify({"error": str(e), "is_inference_search": True}), 400
+    except Exception as e:
+        return jsonify({"error": f"Search error: {str(e)}", "is_inference_search": True}), 500
 
 
 @app.route("/api/relative-search", methods=["POST"])

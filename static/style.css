@@ -767,6 +767,79 @@ footer {
     border-radius: 3px;
 }
 
+/* Inference Search Styles */
+.inference-results {
+    margin-top: 20px;
+}
+
+.source-verse-display {
+    background: var(--background);
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.source-verse-display h3 {
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+}
+
+.source-verse-display .verse-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+}
+
+.pattern-display {
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(52, 152, 219, 0.05);
+    border-radius: 6px;
+    border-left: 4px solid var(--secondary-color);
+}
+
+.pattern-display strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.pattern-code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    background: rgba(44, 62, 80, 0.05);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    display: inline-block;
+    margin-left: 8px;
+    line-height: 1.5;
+}
+
+.inference-result-item {
+    border-left: 4px solid var(--secondary-color);
+}
+
+.pattern-info {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.pattern-info strong {
+    color: var(--text-primary);
+}
+
+.pattern-stats {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-left: 10px;
+}
+
 /* Reading View Section */
 .reading-view-section {
     background: linear-gradient(135deg, rgba(44, 62, 80, 0.05), rgba(52, 152, 219, 0.05));

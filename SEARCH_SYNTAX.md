@@ -197,6 +197,89 @@ Instead of specifying a Greek word, you can use these tokens:
 [Matt., John] + λόγος@Nns
 ```
 
+## Special Search Types
+
+### Relative Search (Similar Vocabulary)
+
+The **Relative Search** finds verses that contain similar vocabulary (lemmas) to a reference verse. This is useful for finding parallel passages or thematic connections.
+
+**Syntax:**
+```
+*rel <verse reference>
+rel <verse reference>
+```
+
+**Examples:**
+
+**Find verses with similar vocabulary to Romans 8:1:**
+```
+*rel Rom. 8:1
+```
+
+**Find verses similar to John 3:16:**
+```
+rel John 3:16
+```
+
+**How it works:**
+1. Extracts all unique lemmas (root words) from the source verse
+2. Weights important words (verbs, nouns, adjectives, adverbs) more heavily than function words (articles, prepositions, pronouns)
+3. Searches for verses containing these lemmas and scores them by similarity
+4. Displays results with matching words highlighted in **bold**
+5. Shows a word selection panel where you can include/exclude specific words and re-run the search
+
+**Interactive Features:**
+- **Word Selection Panel**: Choose which lemmas to include in the search
+- **Filter Options**: Select all, none, or only important words
+- **Re-search**: Adjust your search by selecting/deselecting words
+- **Match Highlighting**: Matching words appear in bold in the results
+
+### Inference Search (Similar Syntax)
+
+The **Inference Search** finds verses with similar grammatical structure to a reference verse. This is different from relative search—it looks for syntactic patterns, not just shared vocabulary.
+
+**Syntax:**
+```
+*inf <verse reference>
+inf <verse reference>
+```
+
+**Examples:**
+
+**Find verses with similar syntax to Romans 8:1:**
+```
+*inf Rom. 8:1
+```
+
+**Find verses with similar structure to John 1:1:**
+```
+inf John 1:1
+```
+
+**How it works:**
+1. Extracts the part-of-speech (POS) sequence from the source verse
+   - Example: `[noun] → [particle] → [adverb] → [noun] → [article] → [preposition]`
+2. Compares this pattern to every verse in the selected corpus
+3. Uses sequence matching algorithms to calculate similarity (0-100%)
+4. Returns verses ranked by similarity percentage
+5. Shows the syntactic pattern for both source and matching verses
+
+**Use Cases:**
+- **Finding structural parallels**: Identify verses with similar sentence construction
+- **Grammatical analysis**: Study how Greek syntax varies across similar patterns
+- **Discourse structure**: Find verses that follow similar rhetorical patterns
+- **Translation study**: Compare how different contexts use similar grammatical structures
+
+**Result Details:**
+- **Similarity Percentage**: How closely the pattern matches (e.g., 85% similar)
+- **Edit Distance**: Number of changes needed to transform one pattern to another
+- **Length Difference**: Difference in number of words between verses
+- **Pattern Display**: Shows the POS sequence for easy comparison
+
+**Corpus Selection:**
+- Use `*` before `inf` to search the entire New Testament (NT)
+- Corpus checkboxes allow filtering between NT and LXX (when available)
+
 ## Tips
 
 1. **Case Sensitivity**: POS codes use UPPERCASE (N, V, J), while case/number/gender use lowercase (n, s, g)
