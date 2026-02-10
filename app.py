@@ -9,7 +9,8 @@ from typing import List, Dict, Any
 import os
 from query_parser import parse_query, execute_query, format_search_help
 from relative_search import parse_verse_reference, get_verse_words, search_by_lemmas, get_verse_context
-from inference_search import get_verse_pattern, search_by_pattern, get_verse_text
+from inference_search import get_verse_pattern, search_by_pattern
+from inference_search import get_verse_text as get_verse_text_with_corpus
 
 app = Flask(__name__)
 DATABASE = "greek_nt.db"
@@ -430,7 +431,7 @@ def handle_inference_search(verse_reference, corpora):
             }), 404
         
         # Get the source verse text
-        source_text = get_verse_text(conn, book_code, chapter, verse, source_corpus)
+        source_text = get_verse_text_with_corpus(conn, book_code, chapter, verse, source_corpus)
         
         # Get book name
         book_name = conn.execute(
