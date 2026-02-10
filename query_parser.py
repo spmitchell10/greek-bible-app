@@ -227,21 +227,7 @@ def parse_query(query_string: str) -> Query:
     query = Query()
     query_string = query_string.strip()
     
-    # Check for relative search: *rel <verse ref> or rel <verse ref>
-    rel_match = re.match(r'^\*?\s*rel\s+(.+)$', query_string, re.IGNORECASE)
-    if rel_match:
-        query.is_relative_search = True
-        query.relative_verse_ref = rel_match.group(1).strip()
-        return query
-    
-    # Check for inference search: *inf <verse ref> or inf <verse ref>
-    inf_match = re.match(r'^\*?\s*inf\s+(.+)$', query_string, re.IGNORECASE)
-    if inf_match:
-        query.is_inference_search = True
-        query.inference_verse_ref = inf_match.group(1).strip()
-        return query
-    
-    # Check for book specification: [Book, Book] + query
+    # Check for book specification first: [Book, Book] + query
     book_match = re.match(r'\[([^\]]+)\]\s*\+\s*(.+)', query_string)
     if book_match:
         # Extract book abbreviations
@@ -255,6 +241,20 @@ def parse_query(query_string: str) -> Query:
         
         # Continue parsing the rest of the query
         query_string = book_match.group(2).strip()
+    
+    # Check for relative search: *rel <verse ref> or rel <verse ref>
+    rel_match = re.match(r'^\*?\s*rel\s+(.+)$', query_string, re.IGNORECASE)
+    if rel_match:
+        query.is_relative_search = True
+        query.relative_verse_ref = rel_match.group(1).strip()
+        return query
+    
+    # Check for inference search: *inf <verse ref> or inf <verse ref>
+    inf_match = re.match(r'^\*?\s*inf\s+(.+)$', query_string, re.IGNORECASE)
+    if inf_match:
+        query.is_inference_search = True
+        query.inference_verse_ref = inf_match.group(1).strip()
+        return query
     
     # Check for wildcard
     elif query_string.startswith('*'):

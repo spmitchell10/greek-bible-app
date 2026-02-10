@@ -253,11 +253,11 @@ def advanced_search():
         # Check if it's a relative search
         if query.is_relative_search:
             # Handle relative search
-            return handle_relative_search(query.relative_verse_ref, corpora, data.get("lemmas"))
+            return handle_relative_search(query.relative_verse_ref, corpora, data.get("lemmas"), query.book_codes)
         
         if query.is_inference_search:
             # Handle inference search
-            return handle_inference_search(query.inference_verse_ref, corpora)
+            return handle_inference_search(query.inference_verse_ref, corpora, query.book_codes)
         
         # Execute the query with corpus filtering
         conn = get_db()
@@ -305,11 +305,17 @@ def advanced_search():
         }), 400
 
 
-def handle_relative_search(verse_reference, corpora, provided_lemmas=None):
+def handle_relative_search(verse_reference, corpora, provided_lemmas=None, book_codes=None):
     """
     Handle a relative search request.
     Extracted as a separate function so it can be called from both
     advanced search and the dedicated relative search endpoint.
+    
+    Args:
+        verse_reference: Verse reference string (e.g., "Rom. 8:1")
+        corpora: List of corpora to search
+        provided_lemmas: Optional pre-selected lemmas for re-search
+        book_codes: Optional list of book codes to filter results
     """
     try:
         # Parse the verse reference
@@ -360,7 +366,8 @@ def handle_relative_search(verse_reference, corpora, provided_lemmas=None):
             book_code,
             chapter,
             verse,
-            corpora
+            corpora,
+            book_codes
         )
         
         # Format results with references
@@ -393,10 +400,15 @@ def handle_relative_search(verse_reference, corpora, provided_lemmas=None):
         return jsonify({"error": f"Search error: {str(e)}", "is_relative_search": True}), 500
 
 
-def handle_inference_search(verse_reference, corpora):
+def handle_inference_search(verse_reference, corpora, book_codes=None):
     """
     Handle an inference search request.
     Finds verses with similar syntactic structure to the source verse.
+    
+    Args:
+        verse_reference: Verse reference string (e.g., "Rom. 8:1")
+        corpora: List of corpora to search
+        book_codes: Optional list of book codes to filter results
     """
     try:
         # Parse the verse reference
@@ -456,7 +468,8 @@ def handle_inference_search(verse_reference, corpora):
             corpora,
             min_similarity=0.6,  # 60% similarity threshold
             include_morphology=False,  # Start with just POS matching
-            max_results=100
+            max_results=100,
+            book_codes=book_codes
         )
         
         # Format results with references

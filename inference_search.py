@@ -204,7 +204,8 @@ def search_by_pattern(
     corpora: List[str] = None,
     min_similarity: float = 0.6,
     include_morphology: bool = False,
-    max_results: int = 100
+    max_results: int = 100,
+    book_codes: List[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Search for verses with similar syntactic patterns.
@@ -219,6 +220,7 @@ def search_by_pattern(
         min_similarity: Minimum similarity threshold (0.0 to 1.0)
         include_morphology: Whether pattern includes morphological details
         max_results: Maximum number of results to return
+        book_codes: Optional list of book codes to filter results (e.g., ['01', '06'])
     
     Returns:
         List of dicts with match information, sorted by similarity (descending)
@@ -237,15 +239,26 @@ def search_by_pattern(
     
     # Get all verses in the corpus
     corpus_placeholders = ','.join(['?' for _ in corpora])
+    
+    # Add book filtering if specified
+    book_filter = ""
+    if book_codes:
+        book_placeholders = ','.join(['?' for _ in book_codes])
+        book_filter = f"AND book_code IN ({book_placeholders})"
+    
     query = f"""
         SELECT DISTINCT book_code, chapter, verse, corpus
         FROM words
         WHERE corpus IN ({corpus_placeholders})
+        {book_filter}
         AND NOT (book_code = ? AND chapter = ? AND verse = ?)
         ORDER BY book_code, chapter, verse
     """
     
-    params = corpora + [source_book, source_chapter, source_verse]
+    params = corpora
+    if book_codes:
+        params = params + book_codes
+    params = params + [source_book, source_chapter, source_verse]
     cursor.execute(query, params)
     all_verses = cursor.fetchall()
     

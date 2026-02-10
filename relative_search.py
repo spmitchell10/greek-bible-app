@@ -133,7 +133,8 @@ def search_by_lemmas(
     source_book: str,
     source_chapter: int,
     source_verse: int,
-    corpora: List[str] = None
+    corpora: List[str] = None,
+    book_codes: List[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Search for verses containing the given lemmas.
@@ -146,6 +147,7 @@ def search_by_lemmas(
         source_chapter: Chapter of source verse
         source_verse: Verse number of source verse
         corpora: List of corpora to search ('NT', 'LXX', or both)
+        book_codes: Optional list of book codes to filter results (e.g., ['01', '06'])
     """
     if not lemmas:
         return []
@@ -170,6 +172,12 @@ def search_by_lemmas(
     placeholders = ','.join(['?' for _ in lemma_list])
     corpus_placeholders = ','.join(['?' for _ in corpora])
     
+    # Add book filtering if specified
+    book_filter = ""
+    if book_codes:
+        book_placeholders = ','.join(['?' for _ in book_codes])
+        book_filter = f"AND book_code IN ({book_placeholders})"
+    
     query = f"""
         SELECT 
             book_code,
@@ -179,12 +187,16 @@ def search_by_lemmas(
         FROM words
         WHERE lemma IN ({placeholders})
         AND corpus IN ({corpus_placeholders})
+        {book_filter}
         AND NOT (book_code = ? AND chapter = ? AND verse = ?)
         GROUP BY book_code, chapter, verse, corpus
         ORDER BY book_code, chapter, verse
     """
     
-    params = lemma_list + corpora + [source_book, source_chapter, source_verse]
+    params = lemma_list + corpora
+    if book_codes:
+        params = params + book_codes
+    params = params + [source_book, source_chapter, source_verse]
     cursor.execute(query, params)
     rows = cursor.fetchall()
     
