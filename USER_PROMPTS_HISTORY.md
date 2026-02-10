@@ -203,22 +203,75 @@ This document contains all user prompts from the development session of the Gree
 ### 49. Prompts History Request
 > Create a Markdown file with all of the prompts I have used so far.
 
+### 50. Push Changes to GitHub
+> Let's push current changes to the repo
+
+---
+
+## Inference Search Feature
+
+### 51. Inference Search Request
+> Ok. I want to add a new search feature. Let's call this an inference search = *inf. I would like to be able to search for a verse or verses where the syntax is similar. For instance, if I wanted to search for other verses that are structured like Romans 8:1 I would search "*inf Rom. 8:1". That would search for every verse in the entire New Testament (designated by the wildcard "*") where the sentence structure follows that of Romans 8:1. This search is different that the *rel search since I don't just want to look for similar words that from Romans 8:1 that appear in other verses, but I'm specifically looking for other verses that follow the same syntactical structure of a given verse.
+
+### 52. Flask Restart Needed
+> I think Flask needs to be restarted. I'm not seeing the changes.
+
+### 53. Inference Search Error
+> I'm getting this error when I search *inf Rom. 8:1. Error: Search error: get_verse_text() takes 3 positional arguments but 5 were given
+
+### 54. Push Inference Changes
+> Can you push the changes to the repo
+
+### 55. POS Color Highlighting Request
+> Ok. This is a great enhancement, however I would like to add text highlighting to the sequence of the syntax in a sentence. Each part of speech would have a different highlight color. That color would appear both in the greek text, and the corresponding "Pattern" section below the text. Does this make sense?
+
+---
+
+## Documentation Updates
+
+### 56. Update Search Syntax Documentation
+> Let's update the @SEARCH_SYNTAX.md file with the new search options *rel and *inf. Give examples of usage.
+
+### 57. Add Search Syntax to README
+> Now, I want to add the contents of the Search_Syntax.md file to the Readme.md file.
+
+### 58. Update In-App Help for Inference
+> Ok. For the Search Syntax Help section we need to add *inf searches and examples like we have for *rel searches.
+
+---
+
+## Search Enhancement & UI Simplification
+
+### 59. Book Filtering with rel/inf
+> It doesn't look like I can search a specific book plus the relative or inference searches. For instance I can't search [Rom., Matt.] + rel Rom. 8:16. Nor can I search [Rom., Matt.] + inf Rom. 5:16. It looks like the "inf" and "rel" search isn't set up to scope down the search by book.
+
+### 60. Remove Standard Search
+> I would like to remove the "Standard Search" option and just have the Advanced Search feature and the Read the Greek Text.
+
+### 61. Verify Search Functionality
+> You need to verify that you didn't break anything in the advanced search by removing this feature. Go through a series of queries to test the advanced search to ensure that they aren't broken. For instance, right now I can't search *εἰμί@VaAI3s and get any results. Nor can I get results with [Matt.] + [verb]@pAI3s. Those are all examples in the "Search Syntax Help" section.
+
+### 62. Update Prompts History
+> Update the USER_PROMPTS_HIstory.md file.
+
 ---
 
 ## Summary Statistics
 
-- **Total Prompts**: 49
+- **Total Prompts**: 62
 - **Categories**:
   - Initial Setup & Debugging: 6 prompts
   - Advanced Search Feature: 3 prompts
   - Code Cleanup: 1 prompt
   - LXX Integration: 10 prompts
-  - GitHub Integration: 8 prompts
+  - GitHub Integration: 9 prompts (includes multiple push requests)
   - Relative Search Feature: 8 prompts
-  - Documentation: 2 prompts
+  - Inference Search Feature: 5 prompts
+  - Documentation Updates: 5 prompts
   - Reading View Feature: 3 prompts
   - Discourse Features: 3 prompts
-  - Meta (this file): 1 prompt
+  - Search Enhancement & UI Simplification: 5 prompts
+  - Meta (this file): 2 prompts
 
 ---
 
@@ -233,10 +286,38 @@ This document contains all user prompts from the development session of the Gree
 7. ✅ Reading view with infinite scroll
 8. ✅ Dual display modes (verse-by-verse and paragraph)
 9. ✅ Comprehensive architecture documentation
-10. 🔄 Discourse features planning (in progress)
+10. ✅ Inference search for syntactic patterns (*inf Rom. 8:1)
+11. ✅ POS color-coded highlighting for inference results
+12. ✅ Book filtering for relative and inference searches
+13. ✅ Simplified UI (removed Standard Search)
+14. ✅ Comprehensive in-app help and documentation
+15. 🔄 Discourse features planning (in progress)
 
 ---
 
-*Generated: 2026-02-04*
+## Feature Highlights
+
+### Search Capabilities
+- **Lemma Search**: Find words by their dictionary form across inflected forms
+- **Morphological Search**: Filter by part of speech, case, tense, voice, mood, number, gender, person
+- **Proximity Search**: Find words within N words of each other (W#)
+- **Book Filtering**: Search within specific books or book groups
+- **Relative Search**: Find verses with similar vocabulary (*rel)
+- **Inference Search**: Find verses with similar syntax structure (*inf)
+
+### Reading Features
+- **Infinite Scroll**: Seamlessly read through chapters
+- **Display Modes**: Toggle between verse-by-verse and paragraph format
+- **Dual Corpus**: Support for both Greek NT and LXX (Septuagint)
+
+### Visual Features
+- **POS Color Coding**: 11 different colors for parts of speech
+- **Word Highlighting**: Bold matching words in relative search results
+- **Interactive Word Selection**: Choose which lemmas to include in relative searches
+- **Syntax Patterns**: Visual representation of sentence structure in inference search
+
+---
+
+*Last Updated: 2026-02-10*
 *Project: Greek Bible Study App*
 *Repository: https://github.com/spmitchell10/greek-bible-app*
