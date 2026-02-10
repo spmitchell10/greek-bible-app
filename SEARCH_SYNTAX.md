@@ -215,15 +215,29 @@ rel <verse reference>
 ```
 *rel Rom. 8:1
 ```
+Finds verses containing words like κατάκριμα (condemnation), Χριστός (Christ), Ἰησοῦς (Jesus), etc.
 
 **Find verses similar to John 3:16:**
 ```
 rel John 3:16
 ```
+Searches for verses with vocabulary like ἀγαπάω (love), κόσμος (world), υἱός (son), πιστεύω (believe), etc.
+
+**Find parallel passages to the Lord's Prayer:**
+```
+*rel Matt. 6:9
+```
+
+**Find thematic connections to the Great Commission:**
+```
+*rel Matt. 28:19
+```
 
 **How it works:**
 1. Extracts all unique lemmas (root words) from the source verse
 2. Weights important words (verbs, nouns, adjectives, adverbs) more heavily than function words (articles, prepositions, pronouns)
+   - Important words (verbs, nouns, adjectives, adverbs) = weight of 3
+   - Function words (articles, prepositions, pronouns, particles) = weight of 1
 3. Searches for verses containing these lemmas and scores them by similarity
 4. Displays results with matching words highlighted in **bold**
 5. Shows a word selection panel where you can include/exclude specific words and re-run the search
@@ -233,6 +247,13 @@ rel John 3:16
 - **Filter Options**: Select all, none, or only important words
 - **Re-search**: Adjust your search by selecting/deselecting words
 - **Match Highlighting**: Matching words appear in bold in the results
+- **Similarity Scoring**: Results ranked by score (number and weight of matching lemmas)
+
+**Use Cases:**
+- **Parallel Passages**: Find verses that discuss the same topic or theme
+- **Word Studies**: See where specific vocabulary combinations appear
+- **Thematic Analysis**: Discover connections between passages
+- **Cross-references**: Find related verses for study or teaching
 
 ### Inference Search (Similar Syntax)
 
@@ -256,29 +277,92 @@ inf <verse reference>
 inf John 1:1
 ```
 
+**Find verses with syntax similar to Matthew 5:3:**
+```
+*inf Matt. 5:3
+```
+
 **How it works:**
 1. Extracts the part-of-speech (POS) sequence from the source verse
-   - Example: `[noun] → [particle] → [adverb] → [noun] → [article] → [preposition]`
+   - Example: `[adjective] → [conjunction] → [adverb] → [noun] → [article] → [preposition] → [noun]`
 2. Compares this pattern to every verse in the selected corpus
 3. Uses sequence matching algorithms to calculate similarity (0-100%)
 4. Returns verses ranked by similarity percentage
 5. Shows the syntactic pattern for both source and matching verses
+6. **Color-codes each word and pattern element** by its part of speech for visual clarity
+
+**Visual Highlighting:**
+
+Results display with **color-coded highlighting** where each part of speech has a distinct color:
+- 🔵 **Nouns** - Blue
+- 🔴 **Verbs** - Red
+- 🟢 **Adjectives** - Green
+- 🟣 **Adverbs** - Purple
+- 🟡 **Pronouns** - Gold
+- 🟠 **Articles** - Orange
+- 🔷 **Prepositions** - Teal
+- ⚪ **Conjunctions** - Gray
+- ⚫ **Particles** - Dark Gray
+- 🟧 **Interjections** - Deep Orange
+
+Both the Greek text and the pattern display use matching colors, making it easy to see how the sentence structure corresponds to the grammatical pattern.
+
+**Example: Romans 8:1 Pattern**
+```
+adjective → conjunction → adverb → noun → article → preposition → noun → noun
+(Green)      (Gray)        (Purple)  (Blue)  (Orange)  (Teal)        (Blue)   (Blue)
+```
+
+See `POS_COLOR_REFERENCE.md` for the complete color guide.
 
 **Use Cases:**
 - **Finding structural parallels**: Identify verses with similar sentence construction
 - **Grammatical analysis**: Study how Greek syntax varies across similar patterns
 - **Discourse structure**: Find verses that follow similar rhetorical patterns
 - **Translation study**: Compare how different contexts use similar grammatical structures
+- **Visual learning**: Color-coding makes patterns immediately recognizable
 
 **Result Details:**
 - **Similarity Percentage**: How closely the pattern matches (e.g., 85% similar)
 - **Edit Distance**: Number of changes needed to transform one pattern to another
 - **Length Difference**: Difference in number of words between verses
-- **Pattern Display**: Shows the POS sequence for easy comparison
+- **Pattern Display**: Shows the POS sequence with color-coding for easy comparison
+- **Highlighted Text**: Greek words are color-coded by their grammatical function
 
 **Corpus Selection:**
 - Use `*` before `inf` to search the entire New Testament (NT)
 - Corpus checkboxes allow filtering between NT and LXX (when available)
+
+### Comparison: Relative vs. Inference Search
+
+| Feature | Relative Search (`*rel`) | Inference Search (`*inf`) |
+|---------|--------------------------|---------------------------|
+| **Searches for** | Similar vocabulary/words | Similar grammatical structure |
+| **Matches based on** | Lemmas (root words) | Part-of-speech patterns |
+| **Best for** | Finding parallel passages, thematic connections | Finding structural parallels, syntax patterns |
+| **Highlights** | Matching words in **bold** | Words and patterns color-coded by POS |
+| **Interactive** | Word selection checkboxes | Color-coded visual analysis |
+| **Scoring** | Word count + weight | Similarity percentage (0-100%) |
+| **Example use** | Find other verses about "love" and "world" | Find verses with noun-verb-prep structure |
+
+**When to use *rel:**
+- Looking for passages about similar topics
+- Finding where specific word combinations appear
+- Cross-referencing related themes
+- Studying word usage patterns
+
+**When to use *inf:**
+- Analyzing grammatical structures
+- Finding verses with similar sentence construction
+- Studying Greek syntax patterns
+- Learning discourse grammar
+- Comparing rhetorical structures
+
+**Combining both:**
+You can use both search types on the same verse to get comprehensive analysis:
+1. Use `*rel Rom. 8:1` to find verses with similar vocabulary
+2. Use `*inf Rom. 8:1` to find verses with similar syntax
+3. Compare results to find verses that are similar in both content AND structure
 
 ## Tips
 
