@@ -123,7 +123,8 @@
                                 <li><code>@</code> - Specify morphology codes after a word</li>
                                 <li><code>&</code> - Join multiple search terms</li>
                                 <li><code>W#</code> - Words within # distance (e.g., W2 = within 2 words)</li>
-                                <li><code>*rel <verse ref></code> - Relative search (find similar verses) e.g., <code>*rel Rom. 8:1</code></li>
+                                <li><code>*rel <verse ref></code> - Relative search (similar vocabulary) e.g., <code>*rel Rom. 8:1</code></li>
+                                <li><code>*inf <verse ref></code> - Inference search (similar syntax) e.g., <code>*inf Rom. 8:1</code></li>
                             </ul>
                         </div>
                         <div class="help-section">
@@ -131,12 +132,26 @@
                             <p>Matt, Mark, Mk, Luke, Lk, John, Jn, Acts, Rom, 1Cor, 2Cor, Gal, Eph, Phil, Col, 1Thess, 2Thess, 1Tim, 2Tim, Titus, Phlm, Heb, Jas, 1Pet, 2Pet, 1John, 2John, 3John, Jude, Rev</p>
                         </div>
                         <div class="help-section">
-                            <h4>Relative Search (Parallel Passage Finder):</h4>
-                            <p>Use <code>*rel</code> or <code>rel</code> followed by a verse reference to find verses with similar vocabulary.</p>
+                            <h4>Relative Search (Similar Vocabulary):</h4>
+                            <p>Use <code>*rel</code> or <code>rel</code> followed by a verse reference to find verses with similar vocabulary (parallel passages).</p>
                             <ul>
-                                <li><code>*rel Rom. 8:1</code> - Find verses similar to Romans 8:1</li>
-                                <li><code>rel John 3:16</code> - Find verses similar to John 3:16</li>
+                                <li><code>*rel Rom. 8:1</code> - Find verses with similar words to Romans 8:1</li>
+                                <li><code>rel John 3:16</code> - Find verses with similar words to John 3:16</li>
+                                <li><code>*rel Matt. 6:9</code> - Find parallels to the Lord's Prayer</li>
                                 <li>After searching, you can refine by selecting specific words to include</li>
+                                <li>Matching words are shown in <strong>bold</strong></li>
+                            </ul>
+                        </div>
+                        <div class="help-section">
+                            <h4>Inference Search (Similar Syntax):</h4>
+                            <p>Use <code>*inf</code> or <code>inf</code> followed by a verse reference to find verses with similar grammatical structure.</p>
+                            <ul>
+                                <li><code>*inf Rom. 8:1</code> - Find verses with similar syntax to Romans 8:1</li>
+                                <li><code>inf John 1:1</code> - Find verses with similar structure to John 1:1</li>
+                                <li><code>*inf Matt. 5:3</code> - Find verses structured like the first Beatitude</li>
+                                <li>Results show similarity percentage (0-100%)</li>
+                                <li>Words and patterns are <span style="background: rgba(52,152,219,0.25); padding: 2px 4px; border-radius: 3px;">color-coded</span> by part of speech</li>
+                                <li>Each POS has a unique color: nouns (blue), verbs (red), adjectives (green), etc.</li>
                             </ul>
                         </div>
                     </div>
