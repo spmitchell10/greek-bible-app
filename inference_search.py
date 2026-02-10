@@ -270,14 +270,16 @@ def search_by_pattern(
         if similarity < min_similarity:
             continue
         
-        # Get verse text
+        # Get verse text with POS tags for highlighting
         temp_cursor = conn.cursor()
-        verse_text_result = temp_cursor.execute(
-            "SELECT GROUP_CONCAT(word, ' ') FROM words WHERE book_code = ? AND chapter = ? AND verse = ? AND corpus = ? ORDER BY word_position",
+        verse_words_data = temp_cursor.execute(
+            "SELECT word, pos FROM words WHERE book_code = ? AND chapter = ? AND verse = ? AND corpus = ? ORDER BY word_position",
             (book_code, chapter, verse, corpus)
-        ).fetchone()
+        ).fetchall()
         
-        verse_text = verse_text_result[0] if verse_text_result and verse_text_result[0] else ""
+        # Create array of word objects with POS
+        verse_words = [{'word': word, 'pos': pos if pos else 'unknown'} for word, pos in verse_words_data]
+        verse_text = ' '.join([w['word'] for w in verse_words])
         
         # Get book name
         book_name_result = temp_cursor.execute(
@@ -297,7 +299,9 @@ def search_by_pattern(
             'verse': verse,
             'corpus': corpus,
             'verse_text': verse_text.strip(),
+            'verse_words': verse_words,  # Array of {word, pos} objects for highlighting
             'pattern': verse_pattern_strs,
+            'pattern_objects': verse_pattern,  # Full pattern objects with POS details
             'similarity': round(similarity * 100, 1),  # Convert to percentage
             'edit_distance': edit_distance,
             'length_diff': abs(len(verse_pattern_strs) - source_length)

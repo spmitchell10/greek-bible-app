@@ -592,6 +592,30 @@ function displayRelativeResults(data) {
     container.innerHTML = html;
 }
 
+// Helper function to create highlighted verse text with POS colors
+function buildHighlightedVerseText(words) {
+    if (!words || words.length === 0) {
+        return '';
+    }
+    
+    return words.map(w => {
+        const pos = (w.pos || 'unknown').toLowerCase();
+        return `<span class="pos-${pos}">${w.word}</span>`;
+    }).join(' ');
+}
+
+// Helper function to create highlighted pattern display with POS colors
+function buildHighlightedPattern(patterns) {
+    if (!patterns || patterns.length === 0) {
+        return '';
+    }
+    
+    return patterns.map(p => {
+        const posStr = (typeof p === 'string' ? p : p.pattern_str || p.pos || 'unknown').toLowerCase();
+        return `<span class="pos-${posStr}">${posStr}</span>`;
+    }).join(' → ');
+}
+
 function displayInferenceResults(data) {
     document.getElementById('loading').style.display = 'none';
     
@@ -607,18 +631,38 @@ function displayInferenceResults(data) {
     // Update count
     countSpan.textContent = `${data.results.length} result${data.results.length !== 1 ? 's' : ''}`;
     
+    // Build highlighted source verse text
+    const sourceVerseHighlighted = data.source_verse.words 
+        ? buildHighlightedVerseText(data.source_verse.words)
+        : data.source_verse.text;
+    
+    // Build highlighted source pattern
+    const sourcePatternHighlighted = data.source_verse.pattern_objects
+        ? buildHighlightedPattern(data.source_verse.pattern_objects)
+        : data.source_verse.pattern.join(' → ');
+    
     // Build results HTML
     let html = '<div class="inference-results">';
     html += `<div class="source-verse-display">
                 <h3>Source Verse: ${data.source_verse.reference}</h3>
-                <p class="verse-text">${data.source_verse.text}</p>
+                <p class="verse-text">${sourceVerseHighlighted}</p>
                 <div class="pattern-display">
                     <strong>Syntactic Pattern:</strong> 
-                    <code class="pattern-code">${data.source_verse.pattern.join(' → ')}</code>
+                    <code class="pattern-code">${sourcePatternHighlighted}</code>
                 </div>
              </div>`;
     
     data.results.forEach(result => {
+        // Build highlighted verse text
+        const verseHighlighted = result.verse_words
+            ? buildHighlightedVerseText(result.verse_words)
+            : result.verse_text;
+        
+        // Build highlighted pattern
+        const patternHighlighted = result.pattern_objects
+            ? buildHighlightedPattern(result.pattern_objects)
+            : result.pattern.join(' → ');
+        
         html += `
             <div class="result-item inference-result-item">
                 <div class="result-header">
@@ -627,9 +671,9 @@ function displayInferenceResults(data) {
                         ${result.similarity}% similar
                     </span>
                 </div>
-                <div class="result-text">${result.verse_text}</div>
+                <div class="result-text">${verseHighlighted}</div>
                 <div class="pattern-info">
-                    <strong>Pattern:</strong> <code class="pattern-code">${result.pattern.join(' → ')}</code>
+                    <strong>Pattern:</strong> <code class="pattern-code">${patternHighlighted}</code>
                     <span class="pattern-stats">
                         (Edit distance: ${result.edit_distance}, Length diff: ${result.length_diff})
                     </span>

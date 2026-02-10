@@ -430,8 +430,15 @@ def handle_inference_search(verse_reference, corpora):
                 "is_inference_search": True
             }), 404
         
-        # Get the source verse text
+        # Get the source verse text and words with POS
         source_text = get_verse_text_with_corpus(conn, book_code, chapter, verse, source_corpus)
+        
+        # Get source verse words with POS for highlighting
+        source_words_data = conn.execute(
+            "SELECT word, pos FROM words WHERE book_code = ? AND chapter = ? AND verse = ? AND corpus = ? ORDER BY word_position",
+            (book_code, chapter, verse, source_corpus)
+        ).fetchall()
+        source_words = [{'word': word, 'pos': pos if pos else 'unknown'} for word, pos in source_words_data]
         
         # Get book name
         book_name = conn.execute(
@@ -464,11 +471,13 @@ def handle_inference_search(verse_reference, corpora):
             "source_verse": {
                 "reference": f"{book_name} {chapter}:{verse}",
                 "text": source_text,
+                "words": source_words,  # Array of {word, pos} for highlighting
                 "book_code": book_code,
                 "chapter": chapter,
                 "verse": verse,
                 "corpus": source_corpus,
-                "pattern": [p['pattern_str'] for p in source_pattern]  # Pattern for display
+                "pattern": [p['pattern_str'] for p in source_pattern],  # Pattern strings
+                "pattern_objects": source_pattern  # Full pattern with POS details
             },
             "results": results,
             "count": len(results),
