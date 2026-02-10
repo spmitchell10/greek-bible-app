@@ -4,11 +4,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     loadStats();
     loadBooks();
-    loadMorphologyOptions();
     
     // Event listeners
-    document.getElementById('search-btn').addEventListener('click', performSearch);
-    document.getElementById('clear-btn').addEventListener('click', clearForm);
     document.getElementById('advanced-search-btn').addEventListener('click', performAdvancedSearch);
     document.getElementById('show-help-btn').addEventListener('click', toggleHelp);
     document.getElementById('load-reading-btn').addEventListener('click', loadReadingView);
@@ -57,15 +54,6 @@ async function loadBooks() {
         const response = await fetch('/api/books');
         const books = await response.json();
         
-        // Populate search filter dropdown
-        const select = document.getElementById('book-filter');
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book.book_code;
-            option.textContent = book.book_name;
-            select.appendChild(option);
-        });
-        
         // Populate reading view dropdown
         const readSelect = document.getElementById('read-book');
         books.forEach(book => {
@@ -80,92 +68,7 @@ async function loadBooks() {
     }
 }
 
-// Load morphology filter options
-async function loadMorphologyOptions() {
-    try {
-        const response = await fetch('/api/morphology/options');
-        const options = await response.json();
-        
-        // Populate each dropdown
-        populateSelect('pos-filter', options.pos);
-        populateSelect('tense-filter', options.tense);
-        populateSelect('voice-filter', options.voice);
-        populateSelect('mood-filter', options.mood);
-        populateSelect('case-filter', options.case);
-        populateSelect('number-filter', options.number);
-        populateSelect('gender-filter', options.gender);
-        populateSelect('person-filter', options.person);
-    } catch (error) {
-        console.error('Error loading morphology options:', error);
-    }
-}
-
-// Helper to populate select dropdowns
-function populateSelect(selectId, values) {
-    const select = document.getElementById(selectId);
-    values.forEach(value => {
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = capitalize(value);
-        select.appendChild(option);
-    });
-}
-
-// Capitalize first letter
-function capitalize(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// Perform search
-async function performSearch() {
-    const searchParams = {
-        text: document.getElementById('text-search').value.trim(),
-        lemma: document.getElementById('lemma-exact').value.trim(),
-        book: document.getElementById('book-filter').value,
-        pos: document.getElementById('pos-filter').value,
-        tense: document.getElementById('tense-filter').value,
-        voice: document.getElementById('voice-filter').value,
-        mood: document.getElementById('mood-filter').value,
-        case: document.getElementById('case-filter').value,
-        number: document.getElementById('number-filter').value,
-        gender: document.getElementById('gender-filter').value,
-        person: document.getElementById('person-filter').value,
-    };
-    
-    // Check if at least one criterion is provided
-    const hasSearchCriteria = Object.values(searchParams).some(val => val !== '');
-    
-    if (!hasSearchCriteria) {
-        displayResults({ results: [], count: 0 });
-        return;
-    }
-    
-    // Show loading
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('results-container').innerHTML = '';
-    document.getElementById('results-count').textContent = '';
-    
-    try {
-        const response = await fetch('/api/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(searchParams),
-        });
-        
-        const data = await response.json();
-        displayResults(data);
-    } catch (error) {
-        console.error('Search error:', error);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('results-container').innerHTML = 
-            '<div class="no-results"><p>Error performing search. Please try again.</p></div>';
-    }
-}
-
-// Display search results
+// Display search results (for backward compatibility)
 function displayResults(data) {
     document.getElementById('loading').style.display = 'none';
     
@@ -307,23 +210,10 @@ function createWordDetails(word) {
     return details;
 }
 
-// Clear search form
-function clearForm() {
-    document.getElementById('text-search').value = '';
-    document.getElementById('lemma-exact').value = '';
-    document.getElementById('book-filter').value = '';
-    document.getElementById('pos-filter').value = '';
-    document.getElementById('tense-filter').value = '';
-    document.getElementById('voice-filter').value = '';
-    document.getElementById('mood-filter').value = '';
-    document.getElementById('case-filter').value = '';
-    document.getElementById('number-filter').value = '';
-    document.getElementById('gender-filter').value = '';
-    document.getElementById('person-filter').value = '';
-    document.getElementById('advanced-search').value = '';
-    
-    document.getElementById('results-container').innerHTML = '';
-    document.getElementById('results-count').textContent = '';
+// Capitalize first letter (helper function)
+function capitalize(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Toggle help display
