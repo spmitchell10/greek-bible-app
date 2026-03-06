@@ -348,6 +348,25 @@ def main():
     
     conn.close()
     print()
+
+    # Import English glosses from the MorphGNT morphological lexicon
+    print("Importing English glosses from MorphGNT lexicon...")
+    from import_lexicon import (
+        download_lexemes, parse_lexemes_yaml,
+        create_lexicon_table, populate_lexicon
+    )
+    lexicon_text = download_lexemes()
+    if lexicon_text:
+        entries = parse_lexemes_yaml(lexicon_text)
+        conn2 = sqlite3.connect("greek_nt.db")
+        create_lexicon_table(conn2)
+        count = populate_lexicon(conn2, entries)
+        conn2.close()
+        print(f"[OK] Imported {count:,} lexicon glosses")
+    else:
+        print("[WARN] Could not download lexicon — run 'python import_lexicon.py' later.")
+    print()
+
     print("=" * 60)
     print("Setup complete! Run 'python app.py' to start the application.")
     print("=" * 60)

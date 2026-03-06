@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('advanced-search-btn').addEventListener('click', performAdvancedSearch);
     document.getElementById('show-help-btn').addEventListener('click', toggleHelp);
     document.getElementById('load-reading-btn').addEventListener('click', loadReadingView);
+    document.getElementById('word-popup-close').addEventListener('click', closeWordPopup);
     
     // Display mode change listener
     document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
@@ -577,6 +578,142 @@ function displayInferenceResults(data) {
 }
 
 // ============================================================================
+// WORD INFO POPUP
+// ============================================================================
+
+let activeWordPopupId = null;
+
+function buildVerseHtml(words) {
+    return words
+        .map(w => `<span class="greek-word" data-word-id="${w.id}">${w.word}</span>`)
+        .join(' ');
+}
+
+function attachWordClickHandlers(container) {
+    container.querySelectorAll('.greek-word').forEach(span => {
+        span.addEventListener('click', handleWordClick);
+    });
+}
+
+async function handleWordClick(event) {
+    event.stopPropagation();
+    const wordId = event.currentTarget.dataset.wordId;
+    if (!wordId) return;
+
+    // Toggle off if same word clicked again
+    if (activeWordPopupId === wordId) {
+        closeWordPopup();
+        return;
+    }
+
+    // Mark as active
+    document.querySelectorAll('.greek-word.active-word').forEach(el => el.classList.remove('active-word'));
+    event.currentTarget.classList.add('active-word');
+    activeWordPopupId = wordId;
+
+    const popup = document.getElementById('word-popup');
+    popup.classList.add('loading');
+    popup.style.display = 'block';
+    positionPopup(popup, event.currentTarget);
+
+    document.getElementById('popup-word').textContent = '…';
+    document.getElementById('popup-gloss').textContent = '';
+    document.getElementById('popup-lemma').textContent = '';
+    document.getElementById('popup-parsing').innerHTML = '';
+    document.getElementById('popup-freq').textContent = '';
+
+    try {
+        const response = await fetch(`/api/word-info?id=${wordId}`);
+        const data = await response.json();
+
+        if (data.error) {
+            document.getElementById('popup-word').textContent = 'Error';
+            document.getElementById('popup-gloss').textContent = data.error;
+            return;
+        }
+
+        // Word form and lemma
+        document.getElementById('popup-word').textContent = data.word;
+        document.getElementById('popup-gloss').textContent = data.gloss || '(no gloss available)';
+        document.getElementById('popup-lemma').textContent = `Lemma: ${data.lemma}`;
+
+        // Build parsing line
+        const parsingParts = [];
+        if (data.pos) parsingParts.push(capitalize(data.pos));
+        if (data.tense) parsingParts.push(capitalize(data.tense));
+        if (data.voice) parsingParts.push(capitalize(data.voice));
+        if (data.mood) parsingParts.push(capitalize(data.mood));
+        if (data.person) parsingParts.push(data.person + ' person');
+        if (data.case) parsingParts.push(capitalize(data.case));
+        if (data.number) parsingParts.push(capitalize(data.number));
+        if (data.gender) parsingParts.push(capitalize(data.gender));
+        document.getElementById('popup-parsing').textContent =
+            parsingParts.length ? parsingParts.join(' · ') : '(indeclinable)';
+
+        // Frequency
+        const bookLabel = data.book_abbrev || data.book_name || 'this book';
+        document.getElementById('popup-freq').innerHTML =
+            `<span title="Occurrences in ${data.book_name}">${data.book_count}× in ${bookLabel}</span>` +
+            `<span class="freq-divider">|</span>` +
+            `<span title="Occurrences in the entire Greek New Testament">${data.nt_count}× in NT</span>`;
+
+    } catch (err) {
+        document.getElementById('popup-word').textContent = 'Error';
+        document.getElementById('popup-gloss').textContent = 'Could not load word info.';
+    } finally {
+        popup.classList.remove('loading');
+        positionPopup(popup, event.currentTarget);
+    }
+}
+
+function positionPopup(popup, targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const popupW = 320;
+    popup.style.width = popupW + 'px';
+
+    // Horizontal: align with word, clamp to viewport
+    let left = rect.left;
+    if (left + popupW > window.innerWidth - 12) {
+        left = window.innerWidth - popupW - 12;
+    }
+    if (left < 8) left = 8;
+    popup.style.left = left + 'px';
+
+    // Vertical: prefer below, fall back to above
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
+        popup.style.top = (rect.bottom + 6) + 'px';
+        popup.style.transform = 'none';
+    } else {
+        popup.style.top = (rect.top - 6) + 'px';
+        popup.style.transform = 'translateY(-100%)';
+    }
+}
+
+function closeWordPopup() {
+    const popup = document.getElementById('word-popup');
+    popup.style.display = 'none';
+    popup.style.transform = 'none';
+    document.querySelectorAll('.greek-word.active-word').forEach(el => el.classList.remove('active-word'));
+    activeWordPopupId = null;
+}
+
+// Close popup when clicking outside it
+document.addEventListener('click', function(e) {
+    const popup = document.getElementById('word-popup');
+    if (popup && popup.style.display !== 'none') {
+        if (!popup.contains(e.target) && !e.target.classList.contains('greek-word')) {
+            closeWordPopup();
+        }
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeWordPopup();
+});
+
+// ============================================================================
 // READING VIEW FUNCTIONALITY
 // ============================================================================
 
@@ -716,10 +853,10 @@ function displayChapters(chapters, replace = false) {
             // Paragraph mode: continuous text with superscript verse numbers
             html += '<div class="paragraph-content">';
             chapter.verses.forEach((verse, index) => {
+                const verseHtml = buildVerseHtml(verse.words);
                 html += `<span class="verse-item">`;
                 html += `<sup class="verse-number">${verse.verse}</sup>`;
-                html += `<span class="verse-text">${verse.text}</span>`;
-                // Add space between verses
+                html += `<span class="verse-text">${verseHtml}</span>`;
                 if (index < chapter.verses.length - 1) {
                     html += ' ';
                 }
@@ -729,16 +866,18 @@ function displayChapters(chapters, replace = false) {
         } else {
             // Verse-by-verse mode: traditional format
             chapter.verses.forEach(verse => {
+                const verseHtml = buildVerseHtml(verse.words);
                 html += `
                     <div class="verse-item">
                         <div class="verse-number">${verse.verse}</div>
-                        <div class="verse-text">${verse.text}</div>
+                        <div class="verse-text">${verseHtml}</div>
                     </div>
                 `;
             });
         }
         
         chapterDiv.innerHTML = html;
+        attachWordClickHandlers(chapterDiv);
         
         // Determine where to insert
         if (replace || !container.firstChild) {
@@ -885,8 +1024,9 @@ function handleDisplayModeChange(event) {
             const verseElements = section.querySelectorAll('.verse-item');
             verseElements.forEach(elem => {
                 const verseNum = elem.querySelector('.verse-number').textContent.trim();
-                const verseText = elem.querySelector('.verse-text').textContent.trim();
-                verses.push({ verse: verseNum, text: verseText });
+                // Use innerHTML to preserve clickable greek-word spans
+                const verseHtml = elem.querySelector('.verse-text').innerHTML;
+                verses.push({ verse: verseNum, html: verseHtml });
             });
             
             // Rebuild in verse mode
@@ -895,7 +1035,7 @@ function handleDisplayModeChange(event) {
                 html += `
                     <div class="verse-item">
                         <div class="verse-number">${verse.verse}</div>
-                        <div class="verse-text">${verse.text}</div>
+                        <div class="verse-text">${verse.html}</div>
                     </div>
                 `;
             });
@@ -906,8 +1046,9 @@ function handleDisplayModeChange(event) {
             const verseElements = section.querySelectorAll('.verse-item');
             verseElements.forEach(elem => {
                 const verseNum = elem.querySelector('.verse-number').textContent.trim();
-                const verseText = elem.querySelector('.verse-text').textContent.trim();
-                verses.push({ verse: verseNum, text: verseText });
+                // Use innerHTML to preserve clickable greek-word spans
+                const verseHtml = elem.querySelector('.verse-text').innerHTML;
+                verses.push({ verse: verseNum, html: verseHtml });
             });
             
             // Rebuild in paragraph mode
@@ -916,7 +1057,7 @@ function handleDisplayModeChange(event) {
             verses.forEach((verse, index) => {
                 html += `<span class="verse-item">`;
                 html += `<sup class="verse-number">${verse.verse}</sup>`;
-                html += `<span class="verse-text">${verse.text}</span>`;
+                html += `<span class="verse-text">${verse.html}</span>`;
                 if (index < verses.length - 1) {
                     html += ' ';
                 }
@@ -925,5 +1066,7 @@ function handleDisplayModeChange(event) {
             html += '</div>';
             section.innerHTML = html;
         }
+        
+        attachWordClickHandlers(section);
     });
 }

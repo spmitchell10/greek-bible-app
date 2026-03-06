@@ -194,6 +194,19 @@
         </footer>
     </div>
 
+    <!-- Word info popup (shown on click in reading view) -->
+    <div id="word-popup" class="word-popup" style="display: none;" role="dialog" aria-label="Word information">
+        <div class="word-popup-header">
+            <span class="word-popup-greek" id="popup-word"></span>
+            <button class="word-popup-close" id="word-popup-close" title="Close (Esc)" aria-label="Close">×</button>
+        </div>
+        <div class="word-popup-gloss" id="popup-gloss"></div>
+        <div class="word-popup-lemma" id="popup-lemma"></div>
+        <hr class="word-popup-divider">
+        <div class="word-popup-parsing" id="popup-parsing"></div>
+        <div class="word-popup-freq" id="popup-freq"></div>
+    </div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ Provides linguistic syntax querying capabilities.
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from typing import List, Dict, Any
+from collections import defaultdict
 import os
 from query_parser import parse_query, execute_query, format_search_help
 from relative_search import parse_verse_reference, get_verse_words, search_by_lemmas, get_verse_context
@@ -605,6 +606,72 @@ def search_help():
     return jsonify(format_search_help())
 
 
+@app.route("/api/word-info")
+def word_info():
+    """
+    Get full parsing, frequency, and gloss for a single word token.
+    Expects query param: ?id=<word_id>
+    """
+    word_id = request.args.get("id", type=int)
+    if not word_id:
+        return jsonify({"error": "id parameter required"}), 400
+
+    conn = get_db()
+
+    word = conn.execute("""
+        SELECT w.id, w.word, w.lemma, w.morph_code, w.pos,
+               w.person, w.tense, w.voice, w.mood,
+               w.case_value, w.number, w.gender,
+               w.book_code, w.chapter, w.verse, w.corpus,
+               b.book_name, b.book_abbrev
+        FROM words w
+        JOIN books b ON w.book_code = b.book_code AND b.corpus = w.corpus
+        WHERE w.id = ?
+    """, (word_id,)).fetchone()
+
+    if not word:
+        conn.close()
+        return jsonify({"error": "Word not found"}), 404
+
+    # English gloss from lexicon
+    gloss_row = conn.execute(
+        "SELECT gloss FROM lexicon WHERE lemma = ?", (word["lemma"],)
+    ).fetchone()
+
+    # Frequency within this book
+    book_count = conn.execute(
+        "SELECT COUNT(*) as cnt FROM words WHERE lemma = ? AND book_code = ? AND corpus = ?",
+        (word["lemma"], word["book_code"], word["corpus"])
+    ).fetchone()["cnt"]
+
+    # Frequency across the entire NT corpus
+    nt_count = conn.execute(
+        "SELECT COUNT(*) as cnt FROM words WHERE lemma = ? AND corpus = 'NT'",
+        (word["lemma"],)
+    ).fetchone()["cnt"]
+
+    conn.close()
+
+    return jsonify({
+        "word": word["word"],
+        "lemma": word["lemma"],
+        "pos": word["pos"],
+        "person": word["person"],
+        "tense": word["tense"],
+        "voice": word["voice"],
+        "mood": word["mood"],
+        "case": word["case_value"],
+        "number": word["number"],
+        "gender": word["gender"],
+        "morph_code": word["morph_code"],
+        "gloss": gloss_row["gloss"] if gloss_row else None,
+        "book_count": book_count,
+        "nt_count": nt_count,
+        "book_name": word["book_name"],
+        "book_abbrev": word["book_abbrev"],
+    })
+
+
 @app.route("/api/read", methods=["POST"])
 def read_text():
     """
@@ -649,27 +716,30 @@ def read_text():
         chapters = []
         
         for ch in range(start_chapter, end_chapter + 1):
-            # Get all verses in this chapter
-            verses = cursor.execute("""
-                SELECT verse, GROUP_CONCAT(word, ' ') as verse_text
+            # Get every word token so the frontend can make each one clickable
+            word_rows = cursor.execute("""
+                SELECT verse, id, word
                 FROM words
                 WHERE book_code = ? AND chapter = ? AND corpus = ?
-                GROUP BY verse
-                ORDER BY verse
+                ORDER BY verse, word_position
             """, (book_code, ch, corpus)).fetchall()
             
-            if verses:
+            if word_rows:
+                # Group tokens by verse
+                verse_map = defaultdict(list)
+                for row in word_rows:
+                    verse_map[row["verse"]].append(
+                        {"id": row["id"], "word": row["word"]}
+                    )
+
                 chapter_data = {
                     "book_code": book_code,
                     "book_name": book_name,
                     "book_abbrev": book_abbrev,
                     "chapter": ch,
                     "verses": [
-                        {
-                            "verse": row["verse"],
-                            "text": row["verse_text"]
-                        }
-                        for row in verses
+                        {"verse": v, "words": verse_map[v]}
+                        for v in sorted(verse_map)
                     ]
                 }
                 chapters.append(chapter_data)

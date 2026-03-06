@@ -421,6 +421,143 @@ footer {
     right: 0;
 }
 
+/* ============================================================
+   CLICKABLE GREEK WORDS
+   ============================================================ */
+
+.greek-word {
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.15s ease, color 0.15s ease;
+    padding: 1px 2px;
+    margin: 0 -2px;
+}
+
+.greek-word:hover {
+    background: rgba(52, 152, 219, 0.18);
+    color: var(--primary-color);
+}
+
+.greek-word.active-word {
+    background: rgba(52, 152, 219, 0.35);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* ============================================================
+   WORD INFO POPUP
+   ============================================================ */
+
+.word-popup {
+    position: fixed;
+    z-index: 1000;
+    width: 320px;
+    background: var(--surface);
+    border: 2px solid var(--secondary-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    overflow: hidden;
+    animation: popupFadeIn 0.15s ease;
+}
+
+@keyframes popupFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.word-popup.loading .word-popup-parsing,
+.word-popup.loading .word-popup-freq,
+.word-popup.loading .word-popup-lemma {
+    opacity: 0.4;
+}
+
+.word-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 12px 16px;
+}
+
+.word-popup-greek {
+    font-family: var(--greek-font);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.02em;
+    min-height: 1.6rem;
+}
+
+.word-popup-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+}
+
+.word-popup-close:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.word-popup-gloss {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    padding: 10px 16px 2px;
+    line-height: 1.4;
+}
+
+.word-popup-lemma {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    padding: 0 16px 10px;
+    font-family: var(--greek-font);
+}
+
+.word-popup-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 12px;
+}
+
+.word-popup-parsing {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    padding: 10px 16px 6px;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+.word-popup-freq {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px 12px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.word-popup-freq span {
+    white-space: nowrap;
+}
+
+.freq-divider {
+    color: var(--border);
+    font-weight: 400;
+}
+
 .search-panel h3 {
     font-size: 1.2rem;
     color: var(--primary-color);
